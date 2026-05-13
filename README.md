@@ -1,4 +1,4 @@
-# agents
+# subagent-pipeline
 
 A four-agent dev pipeline you can drop into any project to get implementer → reviewer → qa orchestration with structured handoffs. Supports Cursor, Claude Code, and Codex via their respective subagent paths.
 
@@ -9,7 +9,7 @@ A four-agent dev pipeline you can drop into any project to get implementer → r
 | `implementer` | Reads the convention chain (CONVENTIONS, ARCHITECTURE, openapi), plans, codes, ships | Full read/write |
 | `reviewer` | Reads the diff cold, outputs BLOCKING / ADVISORY / GOOD | **Read-only** (cannot mutate code) |
 | `qa` | Writes table-driven tests + a manual verification checklist | Full read/write |
-| `ticket-runner` | Fetches a Jira ticket via MCP, consolidates spec from linked Confluence pages, runs the pipeline, reports back to Jira | Full read/write + MCP |
+| `ticket-runner` | Fetches a Jira ticket via MCP, consolidates spec from linked Confluence pages, runs the pipeline, surfaces a final summary | Full read/write + read-only MCP |
 
 The reviewer's read-only constraint is the heart of the pattern. Adversarial separation isn't a prompt instruction; it's a tool-level guarantee.
 
@@ -26,7 +26,7 @@ Each provider folder ships agents in the right frontmatter format. The agent bod
 ## Repo layout
 
 ```
-agents/
+subagent-pipeline/
 ├── cursor/         # for .cursor/agents/
 ├── claude/         # for .claude/agents/
 └── codex/          # for .codex/agents/
@@ -107,7 +107,50 @@ The pipeline writes four artifacts to the repo root:
 | `REVIEW.md` | reviewer | BLOCKING / ADVISORY / GOOD findings |
 | `QA_REPORT.md` | qa | Tests added, coverage gaps, manual checklist |
 
-Each artifact is the structured handoff to the next agent. The artifacts also serve as the audit trail for the PR.
+Each artifact is the structured handoff to the next agent. See **Workflow conventions** below for how to handle them at PR time.
+
+## Workflow conventions
+
+The four artifacts (`SPEC.md`, `IMPLEMENTATION_NOTES.md`, `REVIEW.md`, `QA_REPORT.md`) are pipeline scratch, not project source. Default policy: **gitignore them.** The valuable parts move to the PR description.
+
+### Gitignore them
+
+Add to your project's `.gitignore`:
+
+```gitignore
+# Agent pipeline artifacts (regenerated per feature)
+SPEC.md
+IMPLEMENTATION_NOTES.md
+REVIEW.md
+QA_REPORT.md
+```
+
+Why: PRs should show the diff, not 200 lines of markdown about the diff. Committing the artifacts adds noise without signal, and they go stale fast when the implementer iterates.
+
+### What to do instead
+
+Before opening the PR, copy the useful pieces into the PR description:
+
+- **From `SPEC.md`** — paste the `Goal` and `Acceptance criteria` into the PR description. The reviewer now knows what was asked.
+- **From `QA_REPORT.md`** — paste the `Manual verification checklist` under a `Reviewer testing steps` heading. The reviewer runs the steps before approving.
+- **From `REVIEW.md`** — if any BLOCKING findings were fixed during the build, mention them in a `Decisions` section (example: "Initial draft had a race condition flagged by review; final version uses a Redis lock."). ADVISORY-only findings are history; skip.
+- **`IMPLEMENTATION_NOTES.md`** — skip. The code is the implementation.
+
+### Alternative: commit to `.agent-runs/`
+
+If your team wants a per-feature audit trail (compliance, onboarding, postmortems), commit to a dedicated subfolder instead of the repo root.
+
+In `.gitignore`:
+
+```gitignore
+# Discard the artifacts at repo root
+/SPEC.md
+/IMPLEMENTATION_NOTES.md
+/REVIEW.md
+/QA_REPORT.md
+```
+
+Then in `ticket-runner.md` steps 3 and 5, change the artifact path from `SPEC.md` to `.agent-runs/<ticket-id>/SPEC.md` (same for the other three). Reviewers see them only if they click into the folder, which keeps the PR diff clean while preserving the history.
 
 ## Customising per project
 
@@ -115,7 +158,7 @@ The agents are starting points. Real projects will want to:
 
 - Adjust the testing-framework references in `qa.md` (Vitest is the default; swap for Jest, RSpec, pytest, etc.)
 - Expand `reviewer.md` with domain-specific checks (payments, auth, multi-tenancy)
-- Add project-specific status names to `ticket-runner.md` step 6 ("In Review" vs "Code Review" vs "Ready for Review")
+- Re-enable Jira / Confluence write-back in `ticket-runner.md` once you trust the output (currently disabled — see step 6 in the previous git revision for the template)
 - Add a `domain-expert` subagent for non-trivial business logic if you have it
 
 ## On readonly enforcement
