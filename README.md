@@ -152,6 +152,36 @@ In `.gitignore`:
 
 Then in `ticket-runner.md` steps 3 and 5, change the artifact path from `SPEC.md` to `.agent-runs/<ticket-id>/SPEC.md` (same for the other three). Reviewers see them only if they click into the folder, which keeps the PR diff clean while preserving the history.
 
+## Verifying real subagent isolation
+
+The `readonly: true` flag on the reviewer only matters when the reviewer **actually runs as a separate subagent**. If the parent agent role-plays the reviewer inline instead of spawning a fresh subagent via the Task tool, the readonly constraint becomes irrelevant — the parent has full tool access and can write anything.
+
+This is a real failure mode. The agent runtime has efficiency heuristics that sometimes inline what should be spawned. The ticket-runner workflow includes explicit Task-tool directives to fight this, but you still need to verify on every run.
+
+### Three checks per run
+
+1. **REVIEW.md content quality.** Real adversarial reviews trend toward specific gripes ("the reduce on line 42 throws TypeError if the input is empty"). Self-reviews trend toward flattery ("well-structured, follows conventions"). If REVIEW.md reads like marketing, the reviewer was the parent role-playing.
+
+2. **Conversation tree in your IDE.** Genuine subagent spawns show as nested blocks (Cursor: "Subagent: reviewer" chip; Claude Code: indented sub-conversation). A flat conversation with no nesting means no spawn happened.
+
+3. **Timestamp gaps.** Real spawns add a noticeable "starting subagent..." pause (typically 10-30 seconds for a fresh context). Inline role-play is continuous with no gap.
+
+### What to do when it happens
+
+If you spot inline role-play on a run, re-invoke the reviewer explicitly:
+
+```
+@reviewer Spawn yourself as a fresh subagent via the Task tool. Read the
+diff at HEAD cold. You did not write this code. Output BLOCKING / ADVISORY /
+GOOD to REVIEW.md.
+```
+
+The "Spawn yourself via the Task tool" phrase is the lever. It forces the runtime to actually delegate.
+
+### Caveat
+
+The runtime ultimately decides. Even with explicit directives, an agent may decide spawning is overkill for tiny tasks. The directives raise the probability of real delegation; they don't guarantee it. **Every run, check for the subagent boundaries before trusting the REVIEW.md.**
+
 ## Customising per project
 
 The agents are starting points. Real projects will want to:

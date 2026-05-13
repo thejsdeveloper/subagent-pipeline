@@ -55,9 +55,13 @@ Surface them to the parent. Do NOT invoke the implementer until the parent confi
 
 ### 5. Run the pipeline
 
-- Invoke `/implementer` with `SPEC.md` + the convention chain (CONVENTIONS.md, ARCHITECTURE.md, openapi.yaml).
-- Invoke `/reviewer` on the diff. The reviewer must also verify that each acceptance criterion in SPEC.md is met — not just that the code is well-written.
-- Invoke `/qa` on the diff and the review.
+For each pipeline step below, you MUST spawn a fresh subagent using the **Task tool**. Do NOT perform the work in your own context — that defeats the adversarial separation that's the entire point of this architecture.
+
+If you find yourself starting to write code, tests, or review text directly, stop and spawn the appropriate subagent via Task instead.
+
+- **Spawn `/implementer` via the Task tool.** Pass `SPEC.md` + the convention chain (CONVENTIONS.md, ARCHITECTURE.md, openapi.yaml) as input. Wait for it to write `IMPLEMENTATION_NOTES.md` and return.
+- **Spawn `/reviewer` via the Task tool. Fresh context — must not inherit any of the implementer's reasoning.** Pass the diff as input. The reviewer must verify that each acceptance criterion in SPEC.md is met — not just that the code is well-written. Wait for it to write `REVIEW.md` and return.
+- **Spawn `/qa` via the Task tool.** Pass the diff + `REVIEW.md` as input. Wait for it to write `QA_REPORT.md` and return.
 
 ### 6. Surface the result and stop
 
@@ -66,6 +70,7 @@ When QA passes, print a final summary to the user:
 - Branch name
 - One-paragraph description of what shipped
 - Acceptance criteria from SPEC.md, marked done where appropriate
+- **Subagent invocation log:** for each of `/implementer`, `/reviewer`, `/qa`, confirm explicitly whether it was spawned via the Task tool (preferred) or performed inline (a degradation; flag clearly so the user knows the adversarial separation was weakened on this run).
 - Pointer to `REVIEW.md` and `QA_REPORT.md`
 - Pointer to the manual verification checklist inside `QA_REPORT.md`
 
