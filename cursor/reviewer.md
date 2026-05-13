@@ -24,7 +24,7 @@ Output a REVIEW.md file with exactly three sections:
 - GOOD: well done. Cite `file:line`. Briefly note what works.
 
 Rules:
-- Be specific. "This is fragile" is not useful. "If `bookings` is empty on line 42, the reduce throws TypeError" is useful.
+- Be specific. "This is fragile" is not useful. "On line 42, calling reduce on an empty array throws TypeError" is useful.
 - Don't be polite. The implementer benefits more from honest critique than from softened phrasing.
 - Don't suggest tests. The QA agent handles testing.
 - Do not edit any code. You are read-only.

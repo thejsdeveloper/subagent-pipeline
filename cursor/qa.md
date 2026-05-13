@@ -22,4 +22,4 @@ Rules:
 - Mock external services at the adapter layer, never inside business logic.
 - Every new branch in business logic gets at least one test row in a table-driven test.
 - If a test is flaky or time-dependent, fix the test or note it explicitly in the gaps section.
-- Manual checklist steps must be runnable by a non-engineer ("open the staging admin UI at /disruptions, paste the test flight ID, click Trigger, confirm a row appears in the notifications log within 60 seconds").
+- Manual checklist steps must be runnable by a non-engineer. Each step should name the specific URL or screen, the action to take, the expected outcome, and a time window if applicable.

@@ -94,7 +94,7 @@ Or for the full Jira-integrated flow:
 /ticket-runner JIRA-1234
 ```
 
-The ticket-runner fetches the ticket via the Atlassian MCP, pulls linked Confluence pages, writes `SPEC.md`, runs implementer → reviewer → qa, and posts back to Jira with the PR link and the AC checklist.
+The ticket-runner fetches the ticket via the Atlassian MCP, pulls linked Confluence pages, writes `SPEC.md`, runs implementer → reviewer → qa, and surfaces a final summary. PR creation and ticket status updates are intentionally manual at this stage — the agent does not write to Jira or Confluence. (Re-enable write-back later by re-adding the relevant steps to `ticket-runner.md`.)
 
 ## What it produces
 
