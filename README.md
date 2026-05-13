@@ -1,17 +1,19 @@
 # subagent-pipeline
 
-A four-agent dev pipeline you can drop into any project to get implementer → reviewer → qa orchestration with structured handoffs. Supports Cursor, Claude Code, and Codex via their respective subagent paths.
+A four-subagent dev pipeline you can drop into any project for spec-builder → implementer → reviewer → qa orchestration with structured handoffs. Designed for **manual orchestration** — you fire each subagent as a separate slash command — because that's the only way to guarantee fresh contexts and adversarial separation per step. Works with Cursor, Claude Code, and Codex via their native subagent paths.
 
 ## The four agents
 
 | Agent | Role | Tool access |
 |---|---|---|
-| `implementer` | Reads the convention chain (CONVENTIONS, ARCHITECTURE, openapi), plans, codes, ships | Full read/write |
-| `reviewer` | Reads the diff cold, outputs BLOCKING / ADVISORY / GOOD | **Read-only** (cannot mutate code) |
-| `qa` | Writes table-driven tests + a manual verification checklist | Full read/write |
-| `ticket-runner` | Fetches a Jira ticket via MCP, consolidates spec from linked Confluence pages, runs the pipeline, surfaces a final summary | Full read/write + read-only MCP |
+| `spec-builder` | Fetches a Jira ticket via MCP, consolidates the spec from linked Confluence pages, writes `SPEC.md`. Stops. | Read + Write + read-only MCP |
+| `implementer` | Reads `SPEC.md` + the convention chain, plans, codes, ships. Writes `IMPLEMENTATION_NOTES.md`. | Full read/write |
+| `reviewer` | Reads the diff cold, outputs BLOCKING / ADVISORY / GOOD. Writes `REVIEW.md`. | **Read-only** (cannot mutate code) |
+| `qa` | Writes table-driven tests + a manual verification checklist. Writes `QA_REPORT.md`. | Full read/write |
 
 The reviewer's read-only constraint is the heart of the pattern. Adversarial separation isn't a prompt instruction; it's a tool-level guarantee.
+
+**Note:** this repo does NOT include an "orchestrator" agent that runs the four in sequence. That's an explicit design choice — see [Why manual orchestration](#why-manual-orchestration) below.
 
 ## Why per-provider folders
 
@@ -41,13 +43,13 @@ Pick the right folder for your editor and drop it into your project.
 ```bash
 cd /path/to/your/project
 mkdir -p .cursor/agents
-cp /path/to/agents/cursor/*.md .cursor/agents/
+cp /path/to/subagent-pipeline/cursor/*.md .cursor/agents/
 ```
 
 Or symlink, so updates here flow into all your projects:
 
 ```bash
-ln -s /path/to/agents/cursor /path/to/your/project/.cursor/agents
+ln -s /path/to/subagent-pipeline/cursor /path/to/your/project/.cursor/agents
 ```
 
 ### Claude Code
@@ -55,7 +57,7 @@ ln -s /path/to/agents/cursor /path/to/your/project/.cursor/agents
 ```bash
 cd /path/to/your/project
 mkdir -p .claude/agents
-cp /path/to/agents/claude/*.md .claude/agents/
+cp /path/to/subagent-pipeline/claude/*.md .claude/agents/
 ```
 
 ### Codex
@@ -63,7 +65,7 @@ cp /path/to/agents/claude/*.md .claude/agents/
 ```bash
 cd /path/to/your/project
 mkdir -p .codex/agents
-cp /path/to/agents/codex/*.md .codex/agents/
+cp /path/to/subagent-pipeline/codex/*.md .codex/agents/
 ```
 
 ## The convention chain
@@ -76,111 +78,114 @@ Every project that uses these agents should have three files at the repo root:
 
 The implementer reads all three before writing any code. The reviewer checks against them. The qa agent runs the project's testing convention.
 
-If you don't have these files yet, write tiny versions — even 30 lines beats nothing. Iterate as the agents reveal what's ambiguous.
+If you don't have these files yet, write tiny versions — even 30 lines beats nothing. Iterate as the agents reveal what's ambiguous. (Tip: ask `/implementer` to draft the three files by introspecting the existing codebase, then human-review the output.)
 
 ## Usage
 
-In your editor's main chat:
+The pipeline is **manually orchestrated** — you fire each subagent as a separate slash command. This is intentional (see [Why manual orchestration](#why-manual-orchestration)).
+
+### Full Jira-integrated flow
+
+In your editor's main chat, run these **as four separate prompts**:
 
 ```
-/implementer Build the POST /refunds endpoint per openapi.yaml.
-/reviewer Review the diff.
-/qa Generate tests and a manual checklist.
+1. /spec-builder JIRA-1234
+2. /implementer for ticket JIRA-1234
+3. /reviewer for ticket JIRA-1234
+4. /qa for ticket JIRA-1234
 ```
 
-Or for the full Jira-integrated flow:
+Each command must be a separate user input. Do not chain them in one message. Each fresh slash command is what guarantees a fresh subagent context.
+
+### Without Jira
+
+If you don't have a ticket, skip `spec-builder` and start with `implementer`. Use a kebab-case slug as the run ID (the implementer will create `agent-run/<slug>/` to hold artifacts):
 
 ```
-/ticket-runner JIRA-1234
+1. /implementer Build the POST /refunds endpoint per openapi.yaml. Use slug add-refunds-endpoint.
+2. /reviewer for the current diff (slug add-refunds-endpoint).
+3. /qa for the current diff (slug add-refunds-endpoint).
 ```
-
-The ticket-runner fetches the ticket via the Atlassian MCP, pulls linked Confluence pages, writes `SPEC.md`, runs implementer → reviewer → qa, and surfaces a final summary. PR creation and ticket status updates are intentionally manual at this stage — the agent does not write to Jira or Confluence. (Re-enable write-back later by re-adding the relevant steps to `ticket-runner.md`.)
 
 ## What it produces
 
-The pipeline writes four artifacts to the repo root:
+The pipeline writes all artifacts to `agent-run/<ticket-id>/`:
 
-| File | Written by | Contents |
-|---|---|---|
-| `SPEC.md` | ticket-runner | Consolidated requirement from Jira + Confluence |
-| `IMPLEMENTATION_NOTES.md` | implementer | What was built, assumptions, edge cases |
-| `REVIEW.md` | reviewer | BLOCKING / ADVISORY / GOOD findings |
-| `QA_REPORT.md` | qa | Tests added, coverage gaps, manual checklist |
+```
+agent-run/
+└── PROJ-1234/
+    ├── SPEC.md                  ← spec-builder
+    ├── IMPLEMENTATION_NOTES.md  ← implementer
+    ├── REVIEW.md                ← reviewer
+    └── QA_REPORT.md             ← qa
+```
 
-Each artifact is the structured handoff to the next agent. See **Workflow conventions** below for how to handle them at PR time.
+For runs without a ticket, the slug is used instead (e.g., `agent-run/2026-05-13-add-tooltip/`).
+
+Each artifact is the structured handoff to the next subagent. They also serve as a per-feature audit trail you can keep, archive, or discard at PR time. See [Workflow conventions](#workflow-conventions) for how to handle them.
 
 ## Workflow conventions
 
-The four artifacts (`SPEC.md`, `IMPLEMENTATION_NOTES.md`, `REVIEW.md`, `QA_REPORT.md`) are pipeline scratch, not project source. Default policy: **gitignore them.** The valuable parts move to the PR description.
+### Default: gitignore the folder
 
-### Gitignore them
-
-Add to your project's `.gitignore`:
+The `agent-run/` folder is pipeline scratch — regenerated per feature, stale fast. Add to your project's `.gitignore`:
 
 ```gitignore
-# Agent pipeline artifacts (regenerated per feature)
-SPEC.md
-IMPLEMENTATION_NOTES.md
-REVIEW.md
-QA_REPORT.md
+# Agent pipeline artifacts (per-ticket scratch)
+agent-run/
 ```
 
-Why: PRs should show the diff, not 200 lines of markdown about the diff. Committing the artifacts adds noise without signal, and they go stale fast when the implementer iterates.
+Artifacts stay local for the duration of the PR cycle and then get discarded with the branch.
 
-### What to do instead
+### Move the valuable parts into the PR
 
 Before opening the PR, copy the useful pieces into the PR description:
 
-- **From `SPEC.md`** — paste the `Goal` and `Acceptance criteria` into the PR description. The reviewer now knows what was asked.
-- **From `QA_REPORT.md`** — paste the `Manual verification checklist` under a `Reviewer testing steps` heading. The reviewer runs the steps before approving.
-- **From `REVIEW.md`** — if any BLOCKING findings were fixed during the build, mention them in a `Decisions` section (example: "Initial draft had a race condition flagged by review; final version uses a Redis lock."). ADVISORY-only findings are history; skip.
+- **From `SPEC.md`** — paste `Goal` + `Acceptance criteria`. Now the reviewer knows what was asked.
+- **From `QA_REPORT.md`** — paste the `Manual verification checklist` under a `Reviewer testing steps` heading. The reviewer runs it before approving.
+- **From `REVIEW.md`** — if BLOCKING findings were fixed during the build, mention them in a `Decisions` section (example: "Initial draft had a race condition flagged by review; final uses a Redis lock."). ADVISORY-only findings are history; skip.
 - **`IMPLEMENTATION_NOTES.md`** — skip. The code is the implementation.
 
-### Alternative: commit to `.agent-runs/`
+### Alternative: commit `agent-run/` for an audit trail
 
-If your team wants a per-feature audit trail (compliance, onboarding, postmortems), commit to a dedicated subfolder instead of the repo root.
+If your team wants a per-feature audit trail (compliance, onboarding, postmortems), DON'T gitignore `agent-run/`. Commit it. Reviewers see the artifacts in the PR file tree but they're collapsed by default in most code-review UIs.
 
-In `.gitignore`:
+If you want a mixed policy (commit some runs, discard others), be explicit per branch — there's no clean middle ground at the gitignore level.
 
-```gitignore
-# Discard the artifacts at repo root
-/SPEC.md
-/IMPLEMENTATION_NOTES.md
-/REVIEW.md
-/QA_REPORT.md
+## Why manual orchestration
+
+Single-process pipeline orchestration through a "ticket-runner" or "orchestrator" agent is unreliable in practice. The runtime decides on a case-by-case basis whether to spawn subagents (via the Task tool) or just inline the work in its own context. For small tasks it almost always inlines — and when it does, the reviewer's `readonly: true` and "fresh context" guarantees silently evaporate. The reviewer is now the same agent that wrote the implementation, with full memory of every choice. Its "fresh-eyes review" becomes a self-review by definition.
+
+No amount of prompt wording reliably forces real subagent spawning from inside another agent's context. The runtime's spawn heuristics override prompt directives.
+
+What DOES work reliably: **manual slash commands typed by the user**. When you type `/reviewer` as a separate prompt, the runtime treats it as a fresh subagent invocation. Each step gets a clean context. Adversarial separation holds.
+
+So this repo splits the pipeline into four discrete subagents and asks you to fire them yourself, one at a time. Two extra keystrokes per ticket in exchange for actually getting the architecture you think you're getting.
+
+### When you DO want fully automated orchestration
+
+For runs where you need provable isolation without typing four commands (CI, overnight batch, audit-bait), use the **Makefile / CLI route** with per-role `agent -p` invocations. OS process isolation is bulletproof; the runtime can't inline what's in a separate process. Example:
+
+```makefile
+implement:
+	agent -p "@implementer for ticket $(TICKET)" --mode agent --force
+
+review: implement
+	agent -p "@reviewer for ticket $(TICKET)" --mode ask
+
+qa: review
+	agent -p "@qa for ticket $(TICKET)" --mode agent --force
 ```
 
-Then in `ticket-runner.md` steps 3 and 5, change the artifact path from `SPEC.md` to `.agent-runs/<ticket-id>/SPEC.md` (same for the other three). Reviewers see them only if they click into the folder, which keeps the PR diff clean while preserving the history.
+Each `agent -p` is a separate OS process with its own context window. Isolation is structural, not negotiated.
 
-## Verifying real subagent isolation
+## On readonly enforcement
 
-The `readonly: true` flag on the reviewer only matters when the reviewer **actually runs as a separate subagent**. If the parent agent role-plays the reviewer inline instead of spawning a fresh subagent via the Task tool, the readonly constraint becomes irrelevant — the parent has full tool access and can write anything.
+The reviewer is the only agent with restricted tool access. The promise is: even if the user asks the reviewer to "just fix it quickly," the reviewer physically cannot edit files.
 
-This is a real failure mode. The agent runtime has efficiency heuristics that sometimes inline what should be spawned. The ticket-runner workflow includes explicit Task-tool directives to fight this, but you still need to verify on every run.
+This matters because adversarial separation only works if the reviewer's incentives are different from the implementer's. Tool restriction enforces those different incentives at the system level.
 
-### Three checks per run
-
-1. **REVIEW.md content quality.** Real adversarial reviews trend toward specific gripes ("the reduce on line 42 throws TypeError if the input is empty"). Self-reviews trend toward flattery ("well-structured, follows conventions"). If REVIEW.md reads like marketing, the reviewer was the parent role-playing.
-
-2. **Conversation tree in your IDE.** Genuine subagent spawns show as nested blocks (Cursor: "Subagent: reviewer" chip; Claude Code: indented sub-conversation). A flat conversation with no nesting means no spawn happened.
-
-3. **Timestamp gaps.** Real spawns add a noticeable "starting subagent..." pause (typically 10-30 seconds for a fresh context). Inline role-play is continuous with no gap.
-
-### What to do when it happens
-
-If you spot inline role-play on a run, re-invoke the reviewer explicitly:
-
-```
-@reviewer Spawn yourself as a fresh subagent via the Task tool. Read the
-diff at HEAD cold. You did not write this code. Output BLOCKING / ADVISORY /
-GOOD to REVIEW.md.
-```
-
-The "Spawn yourself via the Task tool" phrase is the lever. It forces the runtime to actually delegate.
-
-### Caveat
-
-The runtime ultimately decides. Even with explicit directives, an agent may decide spawning is overkill for tiny tasks. The directives raise the probability of real delegation; they don't guarantee it. **Every run, check for the subagent boundaries before trusting the REVIEW.md.**
+If you ever find yourself wanting to "just let the reviewer fix it," that's the signal to invoke `/implementer for ticket <id>` again with the review as input — not to bypass the separation.
 
 ## Customising per project
 
@@ -188,16 +193,8 @@ The agents are starting points. Real projects will want to:
 
 - Adjust the testing-framework references in `qa.md` (Vitest is the default; swap for Jest, RSpec, pytest, etc.)
 - Expand `reviewer.md` with domain-specific checks (payments, auth, multi-tenancy)
-- Re-enable Jira / Confluence write-back in `ticket-runner.md` once you trust the output (currently disabled — see step 6 in the previous git revision for the template)
+- Re-enable optional Jira / Confluence write-back in `spec-builder.md` once you trust the output (see git history for older `ticket-runner.md` for the template)
 - Add a `domain-expert` subagent for non-trivial business logic if you have it
-
-## On readonly enforcement
-
-The reviewer is the only agent with restricted tool access. The promise is: even if the parent agent or the user asks the reviewer to "just fix it quickly," the reviewer physically cannot edit files.
-
-This matters because adversarial separation only works if the reviewer's incentives are different from the implementer's. Tool restriction enforces those different incentives at the system level.
-
-If you ever find yourself wanting to "just let the reviewer fix it," that's the signal to invoke `/implementer` again with the review as input — not to bypass the separation.
 
 ## License
 
