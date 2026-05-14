@@ -69,13 +69,14 @@ When SPEC.md is ready and free of open questions, print this verbatim:
 
 > SPEC.md is ready at `agent-run/<ticket-id>/SPEC.md`.
 >
-> Run these three commands in order, **each as a separate prompt** (do NOT chain them in one message):
+> Run these four commands in order, **each as a separate prompt** (do NOT chain them in one message):
 >
-> 1. `/implementer for ticket <ticket-id>`
-> 2. `/reviewer for ticket <ticket-id>`
-> 3. `/qa for ticket <ticket-id>`
+> 1. `/planner for ticket <ticket-id>` ← review PLAN.md before continuing
+> 2. `/implementer for ticket <ticket-id>`
+> 3. `/reviewer for ticket <ticket-id>`
+> 4. `/qa for ticket <ticket-id>`
 >
-> Each command must be a separate user input. That is what guarantees a fresh context per step. Do not let me chain them.
+> Each command must be a separate user input. That is what guarantees a fresh context per step. Do not let me chain them. After step 1 (planner), open PLAN.md, course-correct if needed, then proceed.
 
 Then stop. Do not invoke any other subagent.
 

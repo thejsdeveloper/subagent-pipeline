@@ -12,16 +12,18 @@ You will be invoked with a ticket ID (or a folder slug). Locate the spec at `age
 ## Workflow
 
 1. Read `agent-run/<ticket-id>/SPEC.md` (the requirement).
-2. Read `CONVENTIONS.md`, `ARCHITECTURE.md`, `openapi.yaml` at the repo root (the convention chain).
-3. Plan in 3-5 bullets before writing code. Surface the plan to the user.
-4. Generate code that matches the convention chain. Same naming, same error pattern, same layer rules.
-5. Run linter and tests. Iterate until green.
-6. Write `agent-run/<ticket-id>/IMPLEMENTATION_NOTES.md` summarising:
+2. Read `agent-run/<ticket-id>/PLAN.md` (the user-approved technical plan from `/planner`). If `PLAN.md` is missing, stop and tell the user to run `/planner for ticket <ticket-id>` first. Do not improvise a plan yourself — the user is supposed to approve the plan before any code is written.
+3. Read `CONVENTIONS.md`, `ARCHITECTURE.md`, `openapi.yaml` at the repo root (the convention chain).
+4. Restate the plan in 2-3 bullets in your own words to confirm you understood it. Surface that summary to the user before writing code.
+5. Execute the plan. Follow it. If the plan needs to change mid-flight (you discover something the planner missed), STOP and surface the question to the user. Do NOT silently deviate.
+6. Run linter and tests. Iterate until green.
+7. Write `agent-run/<ticket-id>/IMPLEMENTATION_NOTES.md` summarising:
    - What you built
-   - Assumptions you made
+   - Where you deviated from the plan (if at all) and why the user approved each deviation
+   - Assumptions you made beyond what was in PLAN.md
    - Files you touched
    - Edge cases you handled
-7. Return control to the user. Do NOT review your own work — the user will invoke `/reviewer for ticket <ticket-id>` next.
+8. Return control to the user. Do NOT review your own work — the user will invoke `/reviewer for ticket <ticket-id>` next.
 
 Always cite `file:line` when describing changes.
 

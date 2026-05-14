@@ -1,15 +1,16 @@
 # subagent-pipeline
 
-A four-subagent dev pipeline you can drop into any project for spec-builder → implementer → reviewer → qa orchestration with structured handoffs. Designed for **manual orchestration** — you fire each subagent as a separate slash command — because that's the only way to guarantee fresh contexts and adversarial separation per step. Works with Cursor, Claude Code, and Codex via their native subagent paths.
+A five-subagent dev pipeline you can drop into any project for spec-builder → planner → implementer → reviewer → qa orchestration with structured handoffs. Designed for **manual orchestration** — you fire each subagent as a separate slash command — because that's the only way to guarantee fresh contexts and adversarial separation per step. Works with Cursor, Claude Code, and Codex via their native subagent paths.
 
-## The four agents
+## The five agents
 
 | Agent | Role | Tool access |
 |---|---|---|
 | `spec-builder` | Fetches a Jira ticket via MCP, consolidates the spec from linked Confluence pages, writes `SPEC.md`. Stops. | Read + Write + read-only MCP |
-| `implementer` | Reads `SPEC.md` + the convention chain, plans, codes, ships. Writes `IMPLEMENTATION_NOTES.md`. | Full read/write |
-| `reviewer` | Reads the diff cold, outputs BLOCKING / ADVISORY / GOOD. Writes `REVIEW.md`. | **Read-only** (cannot mutate code) |
-| `qa` | Writes table-driven tests + a manual verification checklist. Writes `QA_REPORT.md`. | Full read/write |
+| `planner` | Reads `SPEC.md` + the convention chain, produces a technical `PLAN.md` (approach, file changes, risks). Stops for user review. | **Read-only on source** (can only write PLAN.md) |
+| `implementer` | Reads the approved `PLAN.md` + `SPEC.md` + convention chain. Executes the plan. Writes `IMPLEMENTATION_NOTES.md`. | Full read/write |
+| `reviewer` | Reads the diff cold against `SPEC.md` + conventions. Does NOT read PLAN or NOTES (cold review). Outputs BLOCKING / ADVISORY / GOOD. Writes `REVIEW.md`. | **Read-only** (cannot mutate code) |
+| `qa` | Reads `SPEC.md` + `REVIEW.md` (BLOCKING section) + diff. Does NOT read PLAN or NOTES. Writes tests + manual checklist to `QA_REPORT.md`. | Full read/write |
 
 The reviewer's read-only constraint is the heart of the pattern. Adversarial separation isn't a prompt instruction; it's a tool-level guarantee.
 
@@ -86,25 +87,29 @@ The pipeline is **manually orchestrated** — you fire each subagent as a separa
 
 ### Full Jira-integrated flow
 
-In your editor's main chat, run these **as four separate prompts**:
+In your editor's main chat, run these **as five separate prompts**:
 
 ```
 1. /spec-builder JIRA-1234
-2. /implementer for ticket JIRA-1234
-3. /reviewer for ticket JIRA-1234
-4. /qa for ticket JIRA-1234
+2. /planner for ticket JIRA-1234       ← review and approve PLAN.md before continuing
+3. /implementer for ticket JIRA-1234
+4. /reviewer for ticket JIRA-1234
+5. /qa for ticket JIRA-1234
 ```
 
 Each command must be a separate user input. Do not chain them in one message. Each fresh slash command is what guarantees a fresh subagent context.
 
+**The course-correction beat is at step 2.** After `/planner` produces `PLAN.md`, you read it. If anything's wrong, tell the planner what to change (it iterates), or edit `PLAN.md` directly in your IDE. The implementer doesn't run until you're satisfied with the plan.
+
 ### Without Jira
 
-If you don't have a ticket, skip `spec-builder` and start with `implementer`. Use a kebab-case slug as the run ID (the implementer will create `agent-run/<slug>/` to hold artifacts):
+If you don't have a ticket, skip `spec-builder` and start with `planner`. Use a kebab-case slug as the run ID:
 
 ```
-1. /implementer Build the POST /refunds endpoint per openapi.yaml. Use slug add-refunds-endpoint.
-2. /reviewer for the current diff (slug add-refunds-endpoint).
-3. /qa for the current diff (slug add-refunds-endpoint).
+1. /planner Build the POST /refunds endpoint per openapi.yaml. Use slug add-refunds-endpoint.   ← writes PLAN.md, review it
+2. /implementer for slug add-refunds-endpoint
+3. /reviewer for slug add-refunds-endpoint
+4. /qa for slug add-refunds-endpoint
 ```
 
 ## What it produces
@@ -115,6 +120,7 @@ The pipeline writes all artifacts to `agent-run/<ticket-id>/`:
 agent-run/
 └── PROJ-1234/
     ├── SPEC.md                  ← spec-builder
+    ├── PLAN.md                  ← planner (you review this)
     ├── IMPLEMENTATION_NOTES.md  ← implementer
     ├── REVIEW.md                ← reviewer
     └── QA_REPORT.md             ← qa
@@ -123,6 +129,35 @@ agent-run/
 For runs without a ticket, the slug is used instead (e.g., `agent-run/2026-05-13-add-tooltip/`).
 
 Each artifact is the structured handoff to the next subagent. They also serve as a per-feature audit trail you can keep, archive, or discard at PR time. See [Workflow conventions](#workflow-conventions) for how to handle them.
+
+## Read matrix
+
+Who reads what after the pipeline matures. **R** = reads, **W** = writes.
+
+| File / Source | spec-builder | planner | implementer | reviewer | qa |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Jira ticket (MCP) | **R** | — | — | — | — |
+| Confluence pages (MCP) | **R** | — | — | — | — |
+| `agent-run/<id>/SPEC.md` | **W** | R | R | R | R |
+| `agent-run/<id>/PLAN.md` | — | **W** | R | — | — |
+| `agent-run/<id>/IMPLEMENTATION_NOTES.md` | — | — | **W** | — | — |
+| `agent-run/<id>/REVIEW.md` | — | — | — | **W** | R (BLOCKING only) |
+| `agent-run/<id>/QA_REPORT.md` | — | — | — | — | **W** |
+| `CONVENTIONS.md` (root) | — | R | R | R | R |
+| `ARCHITECTURE.md` (root) | — | R | R | R | — |
+| `openapi.yaml` (root) | — | R | R | R | — |
+| Source files | — | R | R + W | R | R + W tests |
+| `git diff main...HEAD` | — | — | — | R | R |
+
+### Two design choices in this matrix
+
+1. **The reviewer is genuinely cold.** It does NOT read `PLAN.md` or `IMPLEMENTATION_NOTES.md`. Reading the implementer's plan or post-hoc notes would anchor the reviewer to the implementer's framing — that's the opposite of adversarial separation. The reviewer reads only the spec, the conventions, the code at HEAD, and the diff. It judges code-against-spec, not code-against-stated-intent.
+
+2. **QA acts like real-world QA.** It does NOT read `PLAN.md` or `IMPLEMENTATION_NOTES.md`. Real QA doesn't get the engineering plan or the engineer's diary; they get the spec and the changes. The one automation-specific exception: QA reads `REVIEW.md`'s BLOCKING section so it can write regression tests for the bugs the reviewer caught. That cross-pollination is something real-life QA can't do (they have no access to the reviewer's notes), and it's a real strength of the pipeline.
+
+### Where does plan-drift detection go, then?
+
+It's your job at PR time. After the implementer finishes, you have `PLAN.md` (which you approved) and the diff. Open both side-by-side. If the implementer departed from the plan, you catch it — and you're the right person to, because you approved the plan. The reviewer's job is different: code-against-spec, not code-against-plan.
 
 ## Workflow conventions
 

@@ -11,10 +11,12 @@ You did NOT write this code. You are reading the diff cold.
 You will be invoked with a ticket ID. Locate context:
 
 - `agent-run/<ticket-id>/SPEC.md` — what was asked
-- `agent-run/<ticket-id>/IMPLEMENTATION_NOTES.md` — what the implementer claims to have built
 - The diff between the current branch and its base (`git diff main...HEAD` or equivalent)
+- Source files at HEAD (read-only)
 
-If you can't find the SPEC or IMPLEMENTATION_NOTES for the ticket the user named, list `agent-run/` and ask which run to use.
+You will NOT read `PLAN.md` or `IMPLEMENTATION_NOTES.md`. The reviewer is intentionally kept cold. Reading the implementer's plan or post-hoc notes biases the review — you'd anchor on the implementer's framing instead of forming an independent assessment. Judge code-against-spec, not code-against-stated-intent.
+
+If you can't find `SPEC.md` for the ticket the user named, list `agent-run/` and ask which run to use.
 
 ## Evaluation criteria
 
@@ -26,7 +28,7 @@ For each change in the diff, evaluate:
 - Architecture violations (check against ARCHITECTURE.md at repo root)
 - Security or data-integrity concerns
 - Idempotency, retries, and failure modes for any code that touches money, state, or external services
-- Whether each acceptance criterion in SPEC.md is actually met by the diff (not just claimed in IMPLEMENTATION_NOTES.md)
+- Whether each acceptance criterion in SPEC.md is actually met by the diff
 
 ## Output
 
