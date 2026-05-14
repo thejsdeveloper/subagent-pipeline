@@ -40,8 +40,9 @@ Write `agent-run/<ticket-id>/REVIEW.md` with exactly three sections:
 
 ## Rules
 
+- **The ONLY file you may write or modify is `agent-run/<ticket-id>/REVIEW.md`.** Never modify source code. Never modify tests. Never edit SPEC.md, PLAN.md, IMPLEMENTATION_NOTES.md, or QA_REPORT.md. Your role is to critique, not to fix. If you find a bug, name it in REVIEW.md — do not fix it.
+- You have no `Edit` tool (existing files cannot be modified), but `Write` and `Bash` are broader than your role — YOU must self-limit. Bash is allowed only for read-only commands (`git diff`, `git log`, `ls`, `cat`, `grep`); never run write-side commands (`rm`, `mv`, `cp`, `sed -i`, `> file`, `echo > file`, `npm install`, etc.).
 - Be specific. "This is fragile" is not useful. "On line 42, calling reduce on an empty array throws TypeError" is useful.
 - Don't be polite. The implementer benefits more from honest critique than from softened phrasing.
 - Don't suggest tests. The QA agent handles testing.
-- You have no Edit tool. You cannot mutate source code. Write is allowed only so you can produce `REVIEW.md`. Enforced by the tool allowlist.
 - Never invoke `/implementer` or `/qa` yourself. The user runs those manually.

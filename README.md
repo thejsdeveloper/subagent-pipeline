@@ -4,13 +4,13 @@ A five-subagent dev pipeline you can drop into any project for spec-builder → 
 
 ## The five agents
 
-| Agent | Role | Tool access |
+| Agent | Role | Write constraint |
 |---|---|---|
-| `spec-builder` | Fetches a Jira ticket via MCP, consolidates the spec from linked Confluence pages, writes `SPEC.md`. Stops. | Read + Write + read-only MCP |
-| `planner` | Reads `SPEC.md` + the convention chain, produces a technical `PLAN.md` (approach, file changes, risks). Stops for user review. | **Read-only on source** (can only write PLAN.md) |
-| `implementer` | Reads the approved `PLAN.md` + `SPEC.md` + convention chain. Executes the plan. Writes `IMPLEMENTATION_NOTES.md`. | Full read/write |
-| `reviewer` | Reads the diff cold against `SPEC.md` + conventions. Does NOT read PLAN or NOTES (cold review). Outputs BLOCKING / ADVISORY / GOOD. Writes `REVIEW.md`. | **Read-only** (cannot mutate code) |
-| `qa` | Reads `SPEC.md` + `REVIEW.md` (BLOCKING section) + diff. Does NOT read PLAN or NOTES. Writes tests + manual checklist to `QA_REPORT.md`. | Full read/write |
+| `spec-builder` | Fetches a Jira ticket via MCP, consolidates the spec from linked Confluence pages, writes `SPEC.md`. Stops. | Writes only `agent-run/<id>/SPEC.md` |
+| `planner` | Reads `SPEC.md` + the convention chain, produces a technical `PLAN.md` (approach, file changes, risks). Stops for user review. | **Prompt-constrained:** writes only `agent-run/<id>/PLAN.md`. Cannot touch source. |
+| `implementer` | Reads the approved `PLAN.md` + `SPEC.md` + convention chain. Executes the plan. Writes `IMPLEMENTATION_NOTES.md`. | Full source read/write |
+| `reviewer` | Reads the diff cold against `SPEC.md` + conventions. Does NOT read PLAN or NOTES (cold review). Outputs BLOCKING / ADVISORY / GOOD. | **Prompt-constrained:** writes only `agent-run/<id>/REVIEW.md`. Cannot touch source. Bash limited to read-only commands. |
+| `qa` | Reads `SPEC.md` + `REVIEW.md` (BLOCKING section) + diff. Does NOT read PLAN or NOTES. Writes tests + manual checklist to `QA_REPORT.md`. | Full read/write (needs to add test files) |
 
 The reviewer's read-only constraint is the heart of the pattern. Adversarial separation isn't a prompt instruction; it's a tool-level guarantee.
 
@@ -296,11 +296,26 @@ qa: review
 
 Each `agent -p` is a separate OS process with its own context window. Isolation is structural, not negotiated.
 
-## On readonly enforcement
+## On the write constraint for planner and reviewer
 
-The reviewer is the only agent with restricted tool access. The promise is: even if the user asks the reviewer to "just fix it quickly," the reviewer physically cannot edit files.
+Both `planner` and `reviewer` are scoped to write a single file (`PLAN.md` and `REVIEW.md` respectively) and nothing else. The reviewer especially: it must not edit source, even when "just fix it" is tempting.
 
-This matters because adversarial separation only works if the reviewer's incentives are different from the implementer's. Tool restriction enforces those different incentives at the system level.
+### Why the constraint is prompt-level, not tool-level
+
+Earlier versions of these agents used Cursor's `readonly: true` flag to enforce the constraint at the system level. In practice that flag turned out to be too blunt — it blocked ALL writes including the markdown artifact the agent was supposed to produce. The planner couldn't write `PLAN.md`; the reviewer couldn't write `REVIEW.md`. The parent agent ended up writing them based on the subagent's output, which broke the whole "the planner produces the plan" model.
+
+Current approach: `readonly: false` (Cursor / Codex) or `tools: Read, Write, Grep, Glob[, Bash]` (Claude Code), with a **strong prompt-level rule** that the agent may only write its one designated artifact. The frontmatter unlocks the runtime; the prompt enforces the discipline.
+
+The trade-off: the constraint is now a professional rule the agent must follow, not a system-level guarantee. It's softer enforcement, but it actually works. If you see a planner editing source files or a reviewer "helpfully" fixing a bug, that's a violation worth catching in code review.
+
+### Why this is OK for adversarial separation
+
+The reviewer's cold-read guarantee comes from two things:
+
+1. It runs in a fresh subagent context (Task-tool spawn), not the implementer's context.
+2. It does not read `PLAN.md` or `IMPLEMENTATION_NOTES.md` — the spec and the diff are its only inputs.
+
+Those two together mean the reviewer cannot be biased by the implementer's framing. The write constraint (only `REVIEW.md`, not source) is a separate guarantee — it prevents the reviewer from acting as a second implementer. The two guarantees are independent; one weakening doesn't compromise the other.
 
 If you ever find yourself wanting to "just let the reviewer fix it," that's the signal to invoke `/implementer for ticket <id>` again with the review as input — not to bypass the separation.
 

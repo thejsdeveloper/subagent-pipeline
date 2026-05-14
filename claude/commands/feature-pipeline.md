@@ -32,18 +32,29 @@ If both sets of fields are filled, prefer Phase 2 when `PLAN.md` exists at the R
 
 Run this when the user provided **Task** and **ticket-id**, and either no Run directory is given or `PLAN.md` is missing at the Run directory.
 
-**The parent must invoke the spec-builder subagent (when a Jira ID is provided), then immediately the planner subagent. The parent must not fetch the ticket, consolidate the spec, or draft the plan in place of those subagents. Keep pipeline context isolated by spawning each via the Task tool.**
+**The parent must invoke the spec-builder subagent (ONLY when SPEC.md does not already exist AND a Jira ID is provided), then immediately the planner subagent. The parent must not fetch the ticket, consolidate the spec, or draft the plan in place of those subagents. Keep pipeline context isolated by spawning each via the Task tool.**
 
-1. If `ticket-id` matches a Jira ID pattern (e.g., `^[A-Z]+-\d+$`):
-   - Spawn `/spec-builder <ticket-id>` via the Task tool. Fresh subagent context.
-   - Wait for `agent-run/<ticket-id>/SPEC.md` to be written.
-   - If SPEC.md contains an "Open questions" section that is non-empty, STOP here and surface the questions to the user. Do NOT proceed to planner. The user must answer the questions and update SPEC.md before continuing.
-2. If `ticket-id` is a kebab-case slug (non-Jira):
-   - Skip spec-builder. The Task description is the spec.
-   - Write `agent-run/<ticket-id>/SPEC.md` as a minimal one-paragraph spec from the Task description before invoking planner.
-3. Spawn `/planner for ticket <ticket-id>` via the Task tool. Fresh subagent context.
-4. Wait for `agent-run/<ticket-id>/PLAN.md` to be written.
-5. Stop. Print to the user:
+#### Pre-flight check (run FIRST, before spawning anything)
+
+Look at `agent-run/<ticket-id>/SPEC.md` and decide which case applies:
+
+- **Case A — SPEC.md does not exist:**
+  - If `ticket-id` matches a Jira ID pattern (e.g., `^[A-Z]+-\d+$`): the parent invokes `/spec-builder <ticket-id>` via the Task tool. Fresh subagent context. Wait for SPEC.md to be written.
+  - If `ticket-id` is a kebab-case slug (non-Jira): write `agent-run/<ticket-id>/SPEC.md` as a one-paragraph spec from the **Task** description. Do not invoke spec-builder.
+  - Then continue to the planner step.
+
+- **Case B — SPEC.md exists AND its "Open questions" section is non-empty:**
+  - STOP. Print: "SPEC.md at `agent-run/<ticket-id>/SPEC.md` has unresolved open questions. Please answer them in the file (delete or empty out the 'Open questions' section once resolved), then re-invoke `/feature-pipeline` with the same inputs."
+  - Do **NOT** re-run spec-builder. Do **NOT** ask spec-builder to "merge" with the existing SPEC.md. The user's edits are the source of truth — never overwrite them.
+
+- **Case C — SPEC.md exists AND open questions are resolved (section empty, removed, or all items marked done):**
+  - **Skip spec-builder entirely.** SPEC.md is ready as-is, including any decisions the user pasted in. Go straight to the planner step.
+
+#### Planner step
+
+1. The parent invokes `/planner for ticket <ticket-id>` via the Task tool. Fresh subagent context.
+2. Wait for `agent-run/<ticket-id>/PLAN.md` to be written.
+3. Stop. Print to the user:
 
 > Phase 1 complete. PLAN.md is ready at `agent-run/<ticket-id>/PLAN.md`.
 >
