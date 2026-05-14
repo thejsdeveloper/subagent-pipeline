@@ -30,43 +30,70 @@ Each provider folder ships agents in the right frontmatter format. The agent bod
 
 ```
 subagent-pipeline/
-├── cursor/         # for .cursor/agents/
-├── claude/         # for .claude/agents/
-└── codex/          # for .codex/agents/
+├── cursor/
+│   ├── agents/          # 5 subagents → .cursor/agents/
+│   └── commands/        # orchestrator → .cursor/agents/ (Cursor treats commands as subagents)
+├── claude/
+│   ├── agents/          # 5 subagents → .claude/agents/
+│   └── commands/        # orchestrator → .claude/commands/ (Claude Code has a separate path)
+└── codex/
+    ├── agents/          # 5 subagents → .codex/agents/
+    └── commands/        # orchestrator → .codex/agents/ (Codex treats commands as agents)
 ```
+
+The split between `agents/` and `commands/` is conceptual: agents are reusable subagents (`/spec-builder`, `/planner`, `/implementer`, `/reviewer`, `/qa`); commands are user-facing orchestrators that compose multiple agents (`/feature-pipeline`). For Claude Code, the split also matches real destination directories. For Cursor and Codex, both end up in the same `.{tool}/agents/` folder.
 
 ## Install
 
-Pick the right folder for your editor and drop it into your project.
+Pick your editor and run the matching commands.
 
 ### Cursor
+
+Both subagents and commands live in `.cursor/agents/`:
 
 ```bash
 cd /path/to/your/project
 mkdir -p .cursor/agents
-cp /path/to/subagent-pipeline/cursor/*.md .cursor/agents/
+cp /path/to/subagent-pipeline/cursor/agents/*.md    .cursor/agents/
+cp /path/to/subagent-pipeline/cursor/commands/*.md  .cursor/agents/
 ```
 
-Or symlink, so updates here flow into all your projects:
+Or symlink the contents (works on macOS / Linux):
 
 ```bash
-ln -s /path/to/subagent-pipeline/cursor /path/to/your/project/.cursor/agents
+mkdir -p .cursor/agents
+ln -s /path/to/subagent-pipeline/cursor/agents/*.md    .cursor/agents/
+ln -s /path/to/subagent-pipeline/cursor/commands/*.md  .cursor/agents/
 ```
 
 ### Claude Code
 
+Subagents and commands go to separate directories:
+
 ```bash
 cd /path/to/your/project
-mkdir -p .claude/agents
-cp /path/to/subagent-pipeline/claude/*.md .claude/agents/
+mkdir -p .claude/agents .claude/commands
+cp /path/to/subagent-pipeline/claude/agents/*.md    .claude/agents/
+cp /path/to/subagent-pipeline/claude/commands/*.md  .claude/commands/
+```
+
+Or symlink:
+
+```bash
+mkdir -p .claude
+ln -s /path/to/subagent-pipeline/claude/agents    .claude/agents
+ln -s /path/to/subagent-pipeline/claude/commands  .claude/commands
 ```
 
 ### Codex
 
+Same shape as Cursor — both go to `.codex/agents/`:
+
 ```bash
 cd /path/to/your/project
 mkdir -p .codex/agents
-cp /path/to/subagent-pipeline/codex/*.md .codex/agents/
+cp /path/to/subagent-pipeline/codex/agents/*.md    .codex/agents/
+cp /path/to/subagent-pipeline/codex/commands/*.md  .codex/agents/
 ```
 
 ## The convention chain
