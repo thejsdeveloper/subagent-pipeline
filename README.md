@@ -231,6 +231,8 @@ Who reads what after the pipeline matures. **R** = reads, **W** = writes.
 | Source files | — | R | R + W | R | R + W tests |
 | `git diff main...HEAD` | — | — | — | R | R |
 
+> **On the `planner` and `reviewer` rows:** the `R` for source files is the *intended* operational state, enforced at the prompt level only. Both agents technically have write access to source via the runtime; they refuse to use it because their prompts forbid it. Same for the implementer's restriction on running `git add` / `git commit` — the runtime allows those commands, the prompt forbids them. See [On the write constraint for planner and reviewer](#on-the-write-constraint-for-planner-and-reviewer) for the reasoning and trade-off.
+
 ### Two design choices in this matrix
 
 1. **The reviewer is genuinely cold.** It does NOT read `PLAN.md` or `IMPLEMENTATION_NOTES.md`. Reading the implementer's plan or post-hoc notes would anchor the reviewer to the implementer's framing — that's the opposite of adversarial separation. The reviewer reads only the spec, the conventions, the code at HEAD, and the diff. It judges code-against-spec, not code-against-stated-intent.

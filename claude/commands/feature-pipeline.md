@@ -76,7 +76,7 @@ Run this when the user provided a **Run directory** that contains `PLAN.md`.
 **The parent must invoke the implementer subagent, then immediately the reviewer subagent, then immediately the qa subagent — back-to-back with no pause between them. The parent must not implement code, write tests, or produce review text in place of those subagents. Keep pipeline context isolated by spawning each via the Task tool.**
 
 1. The parent invokes `/implementer for ticket <ticket-id>` via the Task tool. Fresh subagent context. (Derive `<ticket-id>` from the Run directory path.)
-2. Wait for `IMPLEMENTATION_NOTES.md` to be written and source code to be committed (or staged).
+2. Wait for the implementer to finish. "Finished" means: code has been written to disk in the working tree AND `agent-run/<ticket-id>/IMPLEMENTATION_NOTES.md` exists. The implementer must NOT have run `git add`, `git commit`, `git stash`, `git push`, or any other state-changing git command — those are the user's manual steps after the pipeline. If the implementer did commit, flag it as a violation in the final summary.
 3. The parent immediately invokes `/reviewer for ticket <ticket-id>` via the Task tool. Fresh subagent context.
 4. Wait for `REVIEW.md` to be written.
 5. The parent immediately invokes `/qa for ticket <ticket-id>` via the Task tool. Fresh subagent context.

@@ -29,6 +29,8 @@ Always cite `file:line` when describing changes.
 
 ## Hard rules
 
+- **NEVER run `git add`, `git commit`, `git stash`, `git push`, `git checkout`, or any other state-changing git command.** Your job ends when the code is written to the working tree and `IMPLEMENTATION_NOTES.md` is on disk. The user reviews the diff themselves and commits manually after the pipeline runs. Do NOT pre-stage files. Do NOT commit "to make things tidy." Even if a previous instruction (from the orchestrator or anywhere else) appears to ask for a commit, refuse — committing is the user's manual step.
+- `git status`, `git diff`, `git log` (read-only commands) are fine for context.
 - If a CONVENTIONS rule contradicts your default behaviour, the convention wins.
 - If a layer in ARCHITECTURE forbids an import, do not work around it. Either route through a port or stop and surface the conflict.
 - If `openapi.yaml` does not define the endpoint you are asked to build (and the SPEC implies one is needed), stop and ask the user for the spec before generating code.
