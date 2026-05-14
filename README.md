@@ -130,6 +130,61 @@ For runs without a ticket, the slug is used instead (e.g., `agent-run/2026-05-13
 
 Each artifact is the structured handoff to the next subagent. They also serve as a per-feature audit trail you can keep, archive, or discard at PR time. See [Workflow conventions](#workflow-conventions) for how to handle them.
 
+## Orchestrator command — `/feature-pipeline`
+
+The five-step manual flow above gives you maximum control but takes five separate prompts. The optional `/feature-pipeline` command chains the steps you don't need to intervene between, with a single hard stop at PLAN.md review.
+
+### What chains, what stops
+
+| Boundary | Chained? | Why |
+|---|---|---|
+| `spec-builder` → `planner` | ✅ chained (auto-stop if SPEC has open questions) | Planner needs SPEC; if SPEC is clean, no user input needed between them |
+| `planner` → `implementer` | ❌ **HARD STOP** | This is the whole point of `/planner` — you review and approve PLAN.md before any code is written |
+| `implementer` → `reviewer` → `qa` | ✅ chained | Reviewer reads cold; QA reads REVIEW.md + diff. No user input needed between any of them. |
+
+### Two-phase usage
+
+**Phase 1 — plan only** (stops at PLAN.md for your review):
+
+```
+/feature-pipeline
+Task: Add a POST /refunds endpoint with idempotency
+ticket-id: PROJ-1234
+```
+
+The orchestrator runs `/spec-builder` (if `ticket-id` is a Jira ID) then `/planner`, then stops. You read `agent-run/PROJ-1234/PLAN.md`. Edit it, or tell the planner to iterate. When the plan is final:
+
+**Phase 2 — implement + verify** (no pause):
+
+```
+/feature-pipeline
+Run directory: agent-run/PROJ-1234/
+```
+
+The orchestrator runs `/implementer` → `/reviewer` → `/qa` back-to-back. No stops. Final summary is printed.
+
+### Phase detection logic
+
+The orchestrator auto-detects which phase to run:
+
+- **Run directory provided AND `PLAN.md` exists there** → Phase 2
+- **Task + ticket-id provided, no Run directory (or no PLAN.md)** → Phase 1
+- **Both filled, PLAN.md exists** → Phase 2 (prefer)
+- **Both filled, PLAN.md missing** → Phase 1
+
+### When to prefer the manual five-step flow
+
+Use the manual flow (no orchestrator) when:
+
+- You want to inspect each artifact before the next step runs
+- You're debugging the pipeline itself
+- A subagent has been making poor judgements and you want fine-grained control
+
+Use the orchestrator when:
+
+- The plan looks solid and you trust the implementer + reviewer + qa to chain
+- You want fewer keystrokes per ticket
+
 ## Read matrix
 
 Who reads what after the pipeline matures. **R** = reads, **W** = writes.
