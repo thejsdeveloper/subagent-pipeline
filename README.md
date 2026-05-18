@@ -41,15 +41,38 @@ This pipeline enforces separation by spawning each role as a fresh subagent cont
 
 You can also invoke each agent manually if you want full control.
 
-### Five skills
+### Nine skills
 
 Reusable behaviours loaded by name from `skills/`:
 
-- `grill-me` — clarifying-question discipline before writing a spec or plan
-- `gherkin-authoring` — GIVEN/WHEN/THEN acceptance scenarios
-- `architecture-diagrams` — locked-in C4 + Mermaid (no choice fatigue)
-- `architectural-decision-records` — MADR-minimal, zero-padded numbering
-- `brownfield-onboarding` — discovery sequence for repos with no docs
+- `brainstorming` — design conversation with hard-gate on user approval (obra/superpowers)
+- `grill-me` — short-form clarifying questions, one at a time (mattpocock)
+- `gherkin-authoring` — GIVEN/WHEN/THEN acceptance scenarios (intent-driven-dev)
+- `writing-plans` — comprehensive implementation plans, bite-sized tasks (obra/superpowers)
+- `executing-plans` — read plan, raise concerns, execute, report (obra/superpowers)
+- `verification-before-completion` — evidence before claims, always (obra/superpowers)
+- `architecture-diagrams` — locked-in C4 + Mermaid (intent-driven-dev)
+- `architectural-decision-records` — MADR-minimal, zero-padded numbering (intent-driven-dev)
+- `brownfield-onboarding` — discovery sequence for repos with no docs (ours)
+
+### Skill ↔ agent mapping
+
+Which skill each agent loads. Skills referenced are mandatory hops when their trigger condition fires.
+
+| Agent | Skills | When the skill fires |
+|---|---|---|
+| `spec-builder` | `brainstorming` | Ticket has no description or no AC (primary path for incomplete tickets) |
+|  | `grill-me` | AC exists but is vague — narrow clarification, not full design |
+|  | `gherkin-authoring` | Writing the Scenarios section of SPEC.md |
+| `planner` | `writing-plans` | Always — structures every PLAN.md |
+|  | `architectural-decision-records` | Plan introduces a new layer, swaps a major dependency, or contradicts an Accepted ADR |
+| `implementer` | `executing-plans` | Always — read plan, raise concerns up-front, execute |
+|  | `verification-before-completion` | Before claiming code works, tests pass, or lint passes |
+| `reviewer` | — | Reviewer reads cold; loads no skills by design |
+| `qa` | `verification-before-completion` | Before claiming new tests pass or coverage gap is closed |
+| `onboarding` | `brownfield-onboarding` | Always — drives the discovery sequence |
+| `architect` | `architecture-diagrams` | Generating or updating a diagram |
+|  | `architectural-decision-records` | Drafting or accepting a new ADR |
 
 ### Opinionated docs scaffolding
 
