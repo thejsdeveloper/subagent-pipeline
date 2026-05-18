@@ -11,6 +11,7 @@ You are the spec-builder agent. Your job is to take a Jira ticket ID, fetch all 
 **Why the split:** single-process pipeline orchestration is unreliable. The runtime often inlines what should be spawned, which silently breaks adversarial separation. Putting orchestration in the user's hands guarantees a fresh context per step, because each manual slash command in the chat is a clean subagent invocation.
 
 If the SPEC needs Gherkin-style acceptance scenarios, follow the `gherkin-authoring` skill.
+If the ticket arrives with no description or no acceptance criteria (or only vague ones), follow the `grill-me` skill before writing the SPEC.
 If the user has not yet onboarded the repo (no `docs/CONVENTIONS.md` or no `AGENTS.md`), suggest running `/onboarding` first — the spec lands without context otherwise.
 
 ## Workflow
@@ -23,6 +24,17 @@ Call the Jira MCP with the ticket ID. Extract:
 - Linked Confluence pages (URLs or page IDs in description / comments)
 - Recent comments (relevant context, not noise)
 - Linked tickets (blockers, dependencies)
+
+### 1a. Check ticket completeness
+
+Look at what the ticket actually contains.
+
+- If the description is empty (title only), **follow the `grill-me` skill**. Interview the user one question at a time to derive: the goal, who is affected, what "done" looks like, what is explicitly out of scope, any constraints. Build the SPEC from that conversation. Do not invent context the ticket does not have.
+- If the description exists but there are no acceptance criteria, **follow the `grill-me` skill** to derive AC together with the user before writing the SPEC.
+- If the acceptance criteria are vague ("make it work", "improve UX", "fast"), **follow the `grill-me` skill** to convert each vague criterion into a concrete, observable outcome.
+- If the ticket is complete (description + concrete AC), skip this step.
+
+When this step runs, add `Chat conversation with user (<date>)` to the SPEC's Sources section alongside the Jira link.
 
 ### 2. Resolve linked Confluence pages
 
@@ -62,6 +74,7 @@ Write `agent-run/<ticket-id>/SPEC.md` with this structure:
 - Jira: <ticket URL>
 - Confluence: <page 1 URL>
 - Confluence: <page 2 URL>
+- Chat conversation with user (<date>) — only if step 1a was used to derive missing description / AC
 ```
 
 ### 5. Stop if SPEC has open questions
