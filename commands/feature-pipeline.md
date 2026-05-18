@@ -43,16 +43,17 @@ If any are missing, stop and tell the user: "The convention chain isn't set up y
 
 Run this when the user provided **Task** and **ticket-id**, and either no Run directory is given or `PLAN.md` is missing at the Run directory.
 
-**The parent must invoke the spec-builder subagent (ONLY when SPEC.md does not already exist AND a Jira ID is provided), then immediately the planner subagent. The parent must not fetch the ticket, consolidate the spec, or draft the plan in place of those subagents. Keep pipeline context isolated by spawning each via the Task tool.**
+**The parent must invoke the spec-builder subagent (whenever SPEC.md does not already exist), then immediately the planner subagent. The parent must not fetch the ticket, consolidate the spec, or draft the plan in place of those subagents. Keep pipeline context isolated by spawning each via the Task tool.**
 
 #### Pre-flight check (run FIRST, before spawning anything)
 
 Look at `agent-run/<ticket-id>/SPEC.md` and decide which case applies:
 
-- **Case A — SPEC.md does not exist:**
-  - If `ticket-id` matches a Jira ID pattern (e.g., `^[A-Z]+-\d+$`): the parent invokes `/spec-builder <ticket-id>` via the Task tool. Fresh subagent context. Wait for SPEC.md to be written.
-  - If `ticket-id` is a kebab-case slug (non-Jira): write `agent-run/<ticket-id>/SPEC.md` as a one-paragraph spec from the **Task** description. Do not invoke spec-builder.
-  - Then continue to the planner step.
+- **Case A — SPEC.md does not exist:** the parent invokes spec-builder via the Task tool. **Always.** Fresh subagent context. Pass the inputs based on the kind of ticket-id:
+  - If `ticket-id` matches a Jira ID pattern (e.g., `^[A-Z]+-\d+$`): invoke `/spec-builder <ticket-id>`. The agent fetches the ticket from the Jira MCP.
+  - If `ticket-id` is a kebab-case slug (non-Jira): invoke `/spec-builder for ticket <ticket-id>. Task: <verbatim one-line Task description>`. The agent treats the Task as starting context and follows the `grill-me` skill to derive the SPEC from a user conversation.
+  - In either case, wait for `SPEC.md` to be written. **Do not draft the SPEC inline yourself.** The orchestrator never writes SPEC.md — that is spec-builder's job. The orchestrator's role is to spawn, wait, and route.
+  - After SPEC.md is written, re-read the file and re-evaluate. If the "Open questions" section is non-empty, treat it as Case B. Otherwise continue to the planner step.
 
 - **Case B — SPEC.md exists AND its "Open questions" section is non-empty:**
   - STOP. Print: "SPEC.md at `agent-run/<ticket-id>/SPEC.md` has unresolved open questions. Please answer them in the file (delete or empty out the 'Open questions' section once resolved), then re-invoke `/feature-pipeline` with the same inputs."
