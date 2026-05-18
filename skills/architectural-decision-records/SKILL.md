@@ -1,80 +1,89 @@
 ---
 name: architectural-decision-records
-description: ADR template, numbering, and lifecycle. MADR-minimal format, zero-padded four-digit numbering, one decision per file in docs/adr/. Use when drafting or accepting an ADR.
+description: Use when documenting, drafting, reviewing, or updating architectural decisions, ADRs, decision logs, tradeoffs, rationale, consequences, alternatives, or architecture decision history.
 ---
 
-# architectural-decision-records
+# Architectural Decision Records
 
-ADRs record the why behind architectural choices so future contributors don't have to guess. The pipeline standardizes on **MADR-minimal**: one file per decision, short, in Markdown.
+## Overview
 
-## Where ADRs live
+An Architectural Decision Record captures one architecturally significant decision, its rationale, tradeoffs, and consequences. Optimize for future readers reconstructing decision history.
 
-`docs/adr/<nnnn>-<kebab-slug>.md`
+This pipeline locks the format to **MADR-minimal** in `docs/adr/<nnnn>-<kebab-slug>.md` with zero-padded four-digit numbering (`0001`, `0002`, ...). One decision per file. See `templates/madr-minimal.md` for the canonical shape.
 
-Numbering is zero-padded to four digits: `0001`, `0002`, … `0042`. Always monotonic. Never reuse a number. Always find the highest existing number and add one.
+## When to Use
 
-## Template
+Use when creating, updating, reviewing, or explaining an ADR, architecture decision, decision log, tradeoff analysis, rationale, consequences, alternatives, or status.
 
-```markdown
-# <nnnn>. <Title>
+Do not use ADRs for transient implementation details, meeting notes, or insignificant decisions. If significance is unclear, ask what future maintainers will need to know.
 
-Date: <YYYY-MM-DD>
-Status: <Proposed | Accepted | Deprecated | Superseded by ADR-<n>>
+## Workflow
 
-## Context
-<2-4 sentences: the problem, the constraints, what's at stake. Not the solution.>
+1. Identify the single decision. Split multiple decisions into multiple ADRs.
+2. Find the next number: read `docs/adr/`, take the highest existing number, add one, zero-pad to four digits.
+3. Use the template at `templates/madr-minimal.md`.
+4. Capture known facts only: context, requirements, constraints, options, rationale, decision makers, consequences.
+5. If facts are missing, mark them as `Unknown` or ask a focused question; do not invent context, options, or quality attributes.
+6. Write honest consequences: benefits, downsides, follow-up.
+7. Preserve history: supersede old accepted ADRs; do not rewrite them away.
 
-## Decision
-<1-2 paragraphs: what we're going to do. Active voice. Concrete.>
+## Status Values
 
-## Consequences
-<both positive and negative: what we get, what we give up, what we'll regret if this is wrong>
+| Status | Use when |
+| --- | --- |
+| Proposed | Under review |
+| Accepted | Team committed |
+| Deprecated | Historically relevant but no longer recommended |
+| Superseded | Replaced by another ADR; link it |
 
-## Alternatives considered
-- <alt 1> — why not
-- <alt 2> — why not
-```
+## Review Checklist
 
-## Lifecycle
+- One decision, not a bundle
+- Significant: affects structure, quality attributes, constraints, or evolution
+- Context explains why it existed
+- Rejected options/tradeoffs are explicit
+- Rationale is tied to requirements, not preference
+- Downsides and follow-up work are recorded
+- Status is clear
+- Unknowns are marked, not invented
 
-1. **Proposed** — drafted by the planner or architect, not yet accepted. The user reviews.
-2. **Accepted** — the user has agreed. The ADR is now a rule that the reviewer enforces against future code.
-3. **Deprecated** — the decision no longer applies but is kept for history.
-4. **Superseded by ADR-<n>** — a new ADR has replaced this one. Do not edit the original; create the new one.
-
-## Rules
-
-- One decision per file. If you find yourself writing "and we'll also decide X", split into two ADRs.
-- Keep ADRs short. If the body is longer than one screen, it's probably two decisions or it has too much narrative.
-- The first ADR (`0001-record-architecture-decisions.md`) is the meta-ADR that says "we record decisions in this format, in this folder, with this numbering."
-- Once Accepted, the body is frozen. Update status only. If the decision changes, write a new ADR.
-
-## Meta-ADR template (the seed file)
+## Example
 
 ```markdown
-# 0001. Record architecture decisions
+# 0012. Use PostgreSQL for Orders
 
-Date: <YYYY-MM-DD>
-Status: Accepted
+## Context and Problem Statement
 
-## Context
-This codebase needs a lightweight way to record architectural decisions so future contributors can understand why the system looks the way it does, not just what it does.
+Orders need relational constraints, consistency, and reporting joins. The team operates PostgreSQL well.
 
-## Decision
-We will record architectural decisions in `docs/adr/<nnnn>-<kebab-slug>.md`, using the MADR-minimal template. Numbering is zero-padded to four digits, monotonic, never reused. One decision per file.
+## Considered Options
 
-## Consequences
-Positive: searchable history of why we chose X over Y. New contributors get context fast.
-Negative: requires discipline — decisions made without an ADR are invisible.
+- PostgreSQL: integrity, SQL reporting, familiar operations; migrations required.
+- MongoDB: flexible schema; weaker fit for consistency and joins.
 
-## Alternatives considered
-- No ADRs (institutional memory only) — fails when people leave.
-- Long architecture doc with embedded decisions — decisions get buried; status hard to track.
-- Full MADR (with detailed pros/cons matrices) — too much overhead for most decisions.
+## Decision Outcome
+
+Chosen option: "PostgreSQL", because consistency, joins, and operational familiarity matter more than schema flexibility.
+
+### Consequences
+
+- Good, because integrity and reporting align with needs.
+- Bad, because schema changes need migrations.
+- Follow-up: define migration practice.
 ```
 
-## Anti-patterns
+## Common Mistakes
 
-- Backfilling ADRs for decisions made years ago "because we should have one". Only record live decisions.
-- Editing an Accepted ADR. Create a new one that supersedes it.
-- ADRs that read like blog posts. Keep them factual and short.
+| Mistake | Fix |
+| --- | --- |
+| Several decisions in one ADR | Split them. |
+| Sales pitch | Include rejected options and negative consequences. |
+| Invented context | Mark unknowns or ask. |
+| Treating status as decoration | Use status to show lifecycle and link superseding ADRs. |
+| Rewriting history | Keep old ADR; create/link superseding ADR. |
+| Omitting alternatives under pressure | Include at least the rejected option and why it lost. |
+| Non-sequential or non-zero-padded numbers | Always find the highest existing number, add one, zero-pad to four digits. |
+
+## Sources
+
+adr.github.io: home, ADR templates, AD practices. MADR template: https://github.com/adr/madr.

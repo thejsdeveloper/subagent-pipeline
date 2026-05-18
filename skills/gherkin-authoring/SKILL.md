@@ -1,26 +1,26 @@
 ---
 name: gherkin-authoring
-description: Use when drafting, reviewing, or improving Gherkin scenarios in SPEC.md — GIVEN/WHEN/THEN acceptance criteria, Scenario Outlines, Backgrounds, Rules, Doc Strings, Data Tables, tags, or Gherkin embedded in Markdown.
+description: Use when drafting, reviewing, or improving Gherkin, Cucumber scenarios, BDD acceptance criteria, feature examples, Scenario Outlines, Backgrounds, Rules, Doc Strings, Data Tables, tags, or Gherkin embedded in Markdown.
 ---
 
 # Gherkin Authoring
 
 ## Overview
 
-Write Gherkin as executable examples of business behavior. Use domain language, concrete examples, and observable outcomes. Keep implementation and UI mechanics out — those belong in step definitions, not the scenario.
+Write Gherkin as executable examples of business behavior. Optimize for domain language, concrete examples, and observable outcomes; keep implementation and UI mechanics inside step definitions.
 
 ## Scope
 
-Use this for standalone `.feature` files and Gherkin embedded in Markdown (the usual case in SPEC.md). When Gherkin is inside Markdown, edit only the Gherkin block — preserve fences, headings, and surrounding prose. Return the Markdown wrapper with only the Gherkin section changed.
+Use this for standalone `.feature` files and Gherkin embedded in Markdown or other prose. When Gherkin is inside a Markdown wrapper, review or rewrite only the Gherkin section unless the user asks for broader document edits. Preserve fences, headings, and surrounding prose. If the input includes Markdown around the Gherkin, return the Markdown wrapper with only the Gherkin block changed.
 
 ## Workflow
 
-1. Identify the Gherkin region: full `.feature` file, fenced ```gherkin block, indented block, or inline scenario text in Markdown.
-2. Preserve the wrapper unless explicitly asked to change it.
-3. For each behavior, clarify three things: initial state, the event, the observable outcome.
-4. Choose the smallest structure that expresses the behavior: `Feature`, optional `Rule`, `Background`, `Scenario` (or `Scenario Outline` + `Examples` for data variants).
-5. Keep scenarios concrete and short — usually 3–5 steps.
-6. Review syntax before returning: colons in the right places, step keywords used correctly, observable outcomes, table/doc-string formatting.
+1. Identify the Gherkin region: whole `.feature` file, fenced `gherkin` block, indented block, quoted acceptance criteria, or inline scenario text.
+2. Preserve the surrounding wrapper unless explicitly asked to change it. For Markdown input, return the heading/prose/fence context, not just the fenced Gherkin block.
+3. Clarify the behavior as examples: initial state, event, observable outcome.
+4. Choose the smallest structure that expresses the behavior: `Feature`, optional `Rule`, `Background`, `Scenario`/`Example`, or `Scenario Outline` with `Examples`.
+5. Keep scenarios concrete and short, usually 3-5 steps.
+6. Review syntax and readability before returning: colons, step keywords, duplicate step text, observable outcomes, and table/doc string formatting.
 
 ## Quick Reference
 
@@ -37,32 +37,27 @@ Use this for standalone `.feature` files and Gherkin embedded in Markdown (the u
 | `Then` | Observable outcome | No `:` |
 | `And` / `But` | Continue the previous step type | No `:` |
 | `*` | Bullet-like step list | Use sparingly for list-style setup |
-| `@tag` | Group or filter features/scenarios | Place on the line above the item tagged |
+| `@tag` | Group or filter features/scenarios | Place above the item tagged |
 | `#` | Line comment | Line comments only; no block comments |
 | `"""` | Doc String | Passed as final step argument |
-| `\|` | Data Table | Passed as final step argument |
+| `|` | Data Table | Passed as final step argument |
 
-## Authoring rules
+## Authoring Rules
 
-- Use the language domain experts use. Don't translate business behavior into UI clicks, HTTP calls, database rows, queues, mocks, or implementation details.
-- `Given` puts the system in a known state. Avoid user interaction in `Given`.
-- `When` describes one meaningful event. One per scenario, ideally.
-- `Then` describes an outcome visible to a user or external system. Don't assert hidden database state unless that hidden state is the actual external contract.
-- Use `And` / `But` to improve flow, not to hide new phases of the scenario.
-- Don't reuse identical step text under different step keywords. Cucumber ignores `Given`/`When`/`Then` when matching step definitions, so identical text becomes one step.
-- Use two-space indentation unless the existing file uses a different style.
-- Keep `Background` short. If it grows past four lines, raise the abstraction or split by `Rule` / `Feature`.
+- Use the language domain experts use. Avoid translating business behavior into UI clicks, HTTP calls, database rows, queues, mocks, or implementation details.
+- `Given` puts the system in a known state. Avoid user interaction in `Given` steps.
+- `When` describes one meaningful event.
+- `Then` describes an outcome visible to a user or external system. Do not assert hidden database state unless that is the actual external contract.
+- Use `And` and `But` to improve flow, not to hide new phases of the scenario.
+- Avoid identical step text under different step keywords; Cucumber ignores `Given`/`When`/`Then` when matching step definitions.
+- Use two-space indentation unless preserving existing style.
+- Keep `Background` short and vivid. If it grows beyond about four lines, use higher-level steps or split by `Rule`/`Feature`.
 - Use `Scenario Outline` only when examples share the same behavior and differ by data.
-
-## Escape sequences in Data Tables
-
-- `\|` for a pipe inside a cell
-- `\n` for a newline
-- `\\` for a backslash
+- Escape `|` as `\|`, newline as `\n`, and backslash as `\\` inside Data Table cells.
 
 ## Example
 
-Markdown wrapper preserved; only the Gherkin block authored:
+Markdown wrapper preserved; only the Gherkin block is authored:
 
 ````markdown
 ## Acceptance Criteria
@@ -86,30 +81,15 @@ Feature: Password reset
 ```
 ````
 
-## Scenario Outline example
-
-```gherkin
-Scenario Outline: Checkout totals
-  Given a cart with <items> items at $<price> each
-  When the customer checks out
-  Then the total is $<total>
-
-  Examples:
-    | items | price | total |
-    | 1     | 10    | 10    |
-    | 3     | 10    | 30    |
-    | 0     | 10    | 0     |
-```
-
 ## Common Mistakes
 
 | Mistake | Fix |
 | --- | --- |
+| Complaining about Markdown around a Gherkin block | Preserve the wrapper and work only on the Gherkin section. |
 | Returning only a fenced Gherkin block when the input was Markdown | Return the original Markdown wrapper with only the Gherkin content changed. |
-| `Feature Checkout` or `Scenario: Place order:` | Add the missing colon after `Feature`; remove the extra colon from the scenario title. |
-| `Given I click the checkout button` | Move the interaction to `When`; describe state in `Given`. |
-| `Then an order row exists in the database` | Prefer an observable result (order confirmation, status, email). |
-| Reusing identical step text for `Given` and `Then` | Reword so the domain meaning is distinct. |
-| Long scripts with many UI actions | Raise the abstraction; keep the scenario focused on the behavior. |
-| Large `Background` sections | Split by `Rule` or `Feature`, or move setup into higher-level steps. |
-| `Scenario Outline` with one example row | Just use `Scenario`; outlines are for data variation. |
+| `Feature Checkout` or `Scenario: Place order:` | Add the missing colon after `Feature`; remove extra colon from the scenario title. |
+| `Given I click the checkout button` | Move interaction to `When`; describe state in `Given`. |
+| `Then an order row exists in the database` | Prefer an observable result, such as an order confirmation. |
+| Reusing the same step text for `Given` and `Then` | Change the wording so the domain meaning is distinct. |
+| Long scripts with many UI actions | Raise the abstraction and keep the scenario to the behavior. |
+| Large `Background` sections | Use higher-level context or split scenarios by `Rule` or `Feature`. |
