@@ -10,7 +10,7 @@ The skill format and several of the skill bodies in `skills/` were adopted from 
 
 - **[intent-driven-dev](https://github.com/intent-driven-dev) / [intent-driven-template](https://github.com/intent-driven-dev/intent-driven-template)** — `gherkin-authoring`, `architectural-decision-records`, and `architecture-diagrams` (their `c4-diagrams`) follow the structure and much of the wording from `.agents/skills/` in their template repo. Where we diverge, it is to remove choice points (we lock in MADR-minimal for ADRs and plain Mermaid for diagrams) rather than to improve on the underlying ideas.
 
-- **[Jesse Vincent / obra](https://github.com/obra) / [superpowers](https://github.com/obra/superpowers)** (MIT, on the `experiment/superpowers` branch only) — `brainstorming`, `writing-plans`, `executing-plans`, and `verification-before-completion` are copied verbatim and wired into spec-builder, planner, implementer, and qa respectively. This is a comparison branch to evaluate whether the added discipline (HARD-GATE on design approval, evidence-before-claims verification) improves outcomes over the lean baseline on `main`.
+- **[Jesse Vincent / obra](https://github.com/obra) / [superpowers](https://github.com/obra/superpowers)** (MIT) — `brainstorming`, `writing-plans`, `executing-plans`, and `verification-before-completion` are copied verbatim and wired into spec-builder, planner, implementer, and qa respectively. The HARD-GATE on design approval (in brainstorming) and the evidence-before-claims discipline (in verification-before-completion) sharpen the human-in-the-loop and the finish-line gates.
 
 ## Templates
 

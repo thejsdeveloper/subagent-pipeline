@@ -1,7 +1,5 @@
 # subagent-pipeline
 
-> **You're on the `experiment/superpowers` branch.** Four skills from [obra/superpowers](https://github.com/obra/superpowers) are pulled in and wired into the agents: `brainstorming` (spec-builder), `writing-plans` (planner), `executing-plans` + `verification-before-completion` (implementer), `verification-before-completion` (qa). Compare this branch with `main` on the same task to decide if the extra discipline is worth keeping.
-
 A drop-in multi-agent AI development pipeline for **brownfield and greenfield codebases**. Seven agents, two phases, one stop for human review. Cross-compatible with **Cursor**, **Claude Code**, and **Codex** — one folder per concern (agents, commands, skills), one installer.
 
 ```
