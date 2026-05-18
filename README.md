@@ -190,6 +190,7 @@ subagent-pipeline/
 ├── AGENTS.md                  # meta — describes this pipeline
 ├── install.sh                 # --cursor | --claude | --codex
 ├── LICENSE                    # MIT
+├── CREDITS.md                 # attribution for skills and concepts
 └── README.md
 ```
 
@@ -203,6 +204,10 @@ subagent-pipeline/
 To roll back: `git checkout v1`.
 
 ---
+
+## Credits
+
+This pipeline borrows skill bodies and structure from open work by [Matt Pocock](https://github.com/mattpocock/skills) and [intent-driven-dev](https://github.com/intent-driven-dev/intent-driven-template). Full attribution in [CREDITS.md](CREDITS.md).
 
 ## License
 
