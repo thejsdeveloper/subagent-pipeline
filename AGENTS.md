@@ -41,6 +41,8 @@ Read access is unrestricted. **Write constraints are enforced at the prompt leve
 
 The pause between planner and implementer is load-bearing. Skipping it loses the human-in-the-loop guarantee.
 
+Phase 1 takes either a Jira `ticket-id` alone, a `Task` alone (orchestrator derives a `<date>-<slug>` ticket-id), or both. Phase 2 takes a `Run directory` only.
+
 ## The convention chain
 
 The pipeline reads these files in order when planning, implementing, reviewing, and QA-ing:

@@ -10,22 +10,49 @@ You are the feature-pipeline orchestrator. Your job is to invoke the right subag
 
 ## How the user invokes you
 
-Either with a new task (Phase 1):
+### Phase 1 — new work
+
+**Jira ticket** (one input):
+
+```
+/feature-pipeline
+ticket-id: PROJ-1234
+```
+
+**Local task** (one input):
 
 ```
 /feature-pipeline
 Task: <one-line description of the work>
-ticket-id: <PROJ-1234 or kebab-case slug like add-tooltip>
 ```
 
-Or with a finalized plan (Phase 2):
+**Override** (both — user wins on slug):
+
+```
+/feature-pipeline
+Task: <one-line description>
+ticket-id: my-custom-slug
+```
+
+### Phase 2 — finalized plan
 
 ```
 /feature-pipeline
 Run directory: agent-run/<ticket-id>/
 ```
 
-If both sets of fields are filled, prefer Phase 2 when `PLAN.md` exists at the Run directory. Otherwise run Phase 1.
+### Resolving the ticket-id
+
+Before doing anything else, resolve a canonical `ticket-id` from the inputs:
+
+1. If the user provided `ticket-id` matching `^[A-Z]+-\d+$` (Jira pattern): use it as-is. **Jira mode.**
+2. If the user provided `ticket-id` that is a kebab-case slug: use it as-is. **Local mode.**
+3. If the user provided only `Task` (no ticket-id): derive `ticket-id = <YYYY-MM-DD>-<short-kebab-slug-from-Task>`. Keep the slug to 3–5 meaningful words. **Local mode.** Example: `Task: Add a tooltip to the Save button` → `2026-05-18-add-save-tooltip`.
+4. If the user provided neither `Task` nor `ticket-id` and no Run directory: stop and tell the user how to invoke the command.
+
+Surface the resolved ticket-id back to the user before spawning any subagent: "Using ticket-id: `2026-05-18-add-save-tooltip`." This is also what the user will pass to Phase 2.
+
+If both Run-directory inputs and Task / ticket-id are filled, prefer Phase 2 when `PLAN.md` exists at the Run directory. Otherwise run Phase 1.
 
 ## Pre-flight (run BEFORE either phase)
 
@@ -41,7 +68,7 @@ If any are missing, stop and tell the user: "The convention chain isn't set up y
 
 ### Phase 1 — plan only (stops for review)
 
-Run this when the user provided **Task** and **ticket-id**, and either no Run directory is given or `PLAN.md` is missing at the Run directory.
+Run this when the user provided a Jira `ticket-id`, a `Task`, or both — and either no Run directory is given or `PLAN.md` is missing at the Run directory. By this point you have already resolved the canonical `ticket-id` (see "Resolving the ticket-id" above).
 
 **The parent must invoke the spec-builder subagent (whenever SPEC.md does not already exist), then immediately the planner subagent. The parent must not fetch the ticket, consolidate the spec, or draft the plan in place of those subagents. Keep pipeline context isolated by spawning each via the Task tool.**
 
@@ -116,8 +143,10 @@ The parent must not post to Jira or Confluence. PR creation and ticket-status up
 
 | User provided… | Run |
 |---|---|
-| Task + ticket-id, no Run directory | Phase 1 |
-| Task + ticket-id, Run directory points to empty folder or missing PLAN.md | Phase 1 |
+| Jira ticket-id alone | Phase 1 (Jira mode) |
+| Task alone | Phase 1 (local mode; derive `<YYYY-MM-DD>-<slug>` for ticket-id) |
+| Task + custom kebab-slug ticket-id | Phase 1 (local mode; honor user's slug) |
 | Run directory with PLAN.md present | Phase 2 |
-| Both sets of fields filled AND Run directory has PLAN.md | Phase 2 (prefer over Phase 1) |
-| Both sets of fields filled AND Run directory has NO PLAN.md | Phase 1 (PLAN.md doesn't exist yet, so plan first) |
+| Run directory without PLAN.md | Phase 1 (PLAN.md doesn't exist yet, so plan first) |
+| Phase 1 fields filled AND Run directory has PLAN.md | Phase 2 (prefer over Phase 1) |
+| Nothing | Stop, print usage |

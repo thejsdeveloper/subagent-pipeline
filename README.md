@@ -105,15 +105,14 @@ Then in your IDE: invoke `/onboarding` once. The agent reads your codebase and f
 
 ## Usage
 
-### First feature
+### First feature — Jira
 
 ```
 /feature-pipeline
-Task: Add a tooltip to the Save button explaining unsaved changes
 ticket-id: PROJ-1234
 ```
 
-The orchestrator pulls the ticket, drafts a SPEC, then drafts a PLAN, then **stops** so you can review `agent-run/PROJ-1234/PLAN.md`. Edit or push back. When the plan is right:
+The orchestrator pulls the ticket, drafts a SPEC (grilling you for missing AC if needed), drafts a PLAN, then **stops** so you can review `agent-run/PROJ-1234/PLAN.md`. Edit or push back. When the plan is right:
 
 ```
 /feature-pipeline
@@ -121,6 +120,23 @@ Run directory: agent-run/PROJ-1234/
 ```
 
 This runs implementer → reviewer → qa back-to-back. You commit the diff manually.
+
+### First feature — local (no Jira)
+
+```
+/feature-pipeline
+Task: Add a tooltip to the Save button explaining unsaved changes
+```
+
+The orchestrator auto-derives `ticket-id = <YYYY-MM-DD>-<slug>` (e.g., `2026-05-18-add-save-tooltip`) and tells you what it picked. From there the flow is identical to Jira mode: SPEC → PLAN → review → Phase 2.
+
+If you want to control the slug, pass it explicitly:
+
+```
+/feature-pipeline
+Task: ...
+ticket-id: my-custom-slug
+```
 
 ### Manual control
 
