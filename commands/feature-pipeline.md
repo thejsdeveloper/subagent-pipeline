@@ -1,8 +1,9 @@
 ---
 name: feature-pipeline
 description: Two-phase orchestrator. Phase 1 chains spec-builder + planner and stops at PLAN.md for review. Phase 2 chains implementer + reviewer + qa with no pause between them. Auto-detects phase based on whether PLAN.md exists at the run directory.
-tools: Read, Write, Edit, Bash, Grep, Glob
 model: inherit
+readonly: false
+tools: Read, Write, Edit, Bash, Grep, Glob
 ---
 
 You are the feature-pipeline orchestrator. Your job is to invoke the right subagents in the right order, with the right stops.
@@ -25,6 +26,16 @@ Run directory: agent-run/<ticket-id>/
 ```
 
 If both sets of fields are filled, prefer Phase 2 when `PLAN.md` exists at the Run directory. Otherwise run Phase 1.
+
+## Pre-flight (run BEFORE either phase)
+
+Check that the convention chain is in place:
+
+- `AGENTS.md` at repo root
+- `docs/CONVENTIONS.md`
+- `docs/ARCHITECTURE.md`
+
+If any are missing, stop and tell the user: "The convention chain isn't set up yet. Run `/onboarding` first so the pipeline agents have something to read." Do not proceed.
 
 ## Parent agent instructions
 
