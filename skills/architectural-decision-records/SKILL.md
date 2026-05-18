@@ -84,6 +84,34 @@ Chosen option: "PostgreSQL", because consistency, joins, and operational familia
 | Omitting alternatives under pressure | Include at least the rejected option and why it lost. |
 | Non-sequential or non-zero-padded numbers | Always find the highest existing number, add one, zero-pad to four digits. |
 
+## Common Rationalizations
+
+| Rationalization | Reality |
+| --- | --- |
+| "This decision feels small, doesn't need an ADR" | If it changes structure, quality attributes, or system evolution, it needs one. ADRs are cheap to write; lost context is expensive to recover. |
+| "I'll write the ADR after the code lands" | Reverse. The ADR captures the *decision*, which precedes the code. Backfilled ADRs miss the alternatives that were genuinely considered. |
+| "Multiple related decisions in one ADR saves files" | Split them. One decision per file. Mixed ADRs can't be deprecated independently and the status field becomes ambiguous. |
+| "I'll just edit the old ADR instead of superseding" | Editing an Accepted ADR's body destroys history. Always create a new ADR with `Status: Accepted` that supersedes the old one (`Status: Superseded by ADR-<n>`). |
+| "The decision is obvious, alternatives section is busywork" | The alternatives section is the most-read part of a future ADR review. "Why not X?" is the first question every new contributor asks. |
+
+## Red Flags
+
+- ADR contains multiple "we decided to..." statements
+- "Alternatives considered" section is empty or missing
+- Consequences section lists only positives
+- Edits to a previously-Accepted ADR's body (only status should change)
+- Non-sequential or non-zero-padded numbering
+- ADR body longer than one screen
+
+## Verification
+
+- [ ] File is at `docs/adr/<nnnn>-<kebab-slug>.md` with zero-padded four-digit number
+- [ ] Number is `(highest existing number) + 1`, never reused
+- [ ] Exactly one decision in the file
+- [ ] Context, Decision, Consequences, and Alternatives sections all present
+- [ ] Status is one of: Proposed, Accepted, Deprecated, or Superseded by ADR-<n>
+- [ ] At least one rejected alternative with reasoning for why it lost
+
 ## Sources
 
 adr.github.io: home, ADR templates, AD practices. MADR template: https://github.com/adr/madr.

@@ -66,3 +66,33 @@ Use `templates.md` in this skill directory for Mermaid starting points covering 
 | Using C4-specific Mermaid syntax | Use plain Mermaid `flowchart` or `sequenceDiagram`. |
 | Treating modules as containers | Containers are runnable/deployable units; modules are usually components. |
 | Hiding uncertainty | State assumptions and open questions after the diagram. |
+
+## Common Rationalizations
+
+| Rationalization | Reality |
+| --- | --- |
+| "All four C4 levels for completeness" | Draw only the level that answers the current question. Default to Level 2. Extra levels rot fast. |
+| "Mermaid `C4Context` renders prettier" | Use plain `flowchart`. Portability over polish. Plain Mermaid renders in every preview tool. |
+| "ASCII fallback for low-rendering environments" | No. The convention is Mermaid only. Maintaining two formats per diagram doubles drift. |
+| "I'll skip the caption, the diagram is self-explanatory" | It isn't. The caption is what readers actually read. |
+| "More nodes = more accurate" | More nodes = unreadable. Group by domain; show every Lambda only when the audience needs to know each one. |
+
+## Red Flags
+
+- Diagram file has no caption
+- Mermaid block uses `C4Context` / `C4Container` syntax
+- Containers and components mixed in the same diagram
+- Modules drawn as containers
+- One giant cloud labelled "AWS" (or any other provider)
+- More than ~12 nodes in a single diagram
+- Bidirectional arrows everywhere — diagram says nothing about who calls whom
+
+## Verification
+
+- [ ] Diagram lives at `docs/diagrams/<slug>.md`
+- [ ] Uses plain Mermaid (`flowchart` or `sequenceDiagram`)
+- [ ] A caption paragraph follows the Mermaid block
+- [ ] One level only — no mixing containers with their components
+- [ ] External systems use `{{...}}`, data stores use `[(...)]`, queues use `[[...]]`
+- [ ] Edge labels are present where the protocol or intent matters
+- [ ] Diagram fits on one screen without zoom (~12 nodes max)

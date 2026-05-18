@@ -93,3 +93,32 @@ Feature: Password reset
 | Reusing the same step text for `Given` and `Then` | Change the wording so the domain meaning is distinct. |
 | Long scripts with many UI actions | Raise the abstraction and keep the scenario to the behavior. |
 | Large `Background` sections | Use higher-level context or split scenarios by `Rule` or `Feature`. |
+
+## Common Rationalizations
+
+| Rationalization | Reality |
+| --- | --- |
+| "The Markdown wrapper is ugly, I'll strip it" | Preserve the wrapper. Stripping surrounding prose loses context the writer chose to keep. |
+| "One big scenario covers the whole flow more efficiently" | Split it. One scenario per user-facing outcome. Big scenarios are brittle and unreadable. |
+| "Implementation detail in `When` makes it more specific" | Implementation belongs in step definitions, not in Gherkin. "Submits the form" describes behavior; "clicks `#submit-btn`" couples to a selector. |
+| "The scenario is obvious, I'll skip `Then`" | No `Then` means no observable outcome means it's a script, not a test. |
+| "Scenario Outline with one row is fine" | Then it's just a `Scenario`. Outlines exist for data variation. |
+
+## Red Flags
+
+- Scenarios reference DOM IDs, CSS selectors, or HTTP status codes
+- A scenario runs longer than ~7 steps
+- `Background` grows beyond 4 lines
+- Identical step text appears under different keywords (`Given` and `Then`)
+- `Then` asserts hidden state ("the database has...") with no user-observable effect
+- Data Tables contain raw `|` without `\|` escapes
+
+## Verification
+
+- [ ] Every scenario has `Given`, `When`, and `Then`
+- [ ] `Then` describes an observable outcome, not hidden state
+- [ ] Scenarios are 3–5 steps each
+- [ ] No implementation detail in any step text
+- [ ] Tags are applied where filtering matters; none where they don't
+- [ ] Data Tables and Doc Strings have correct escape sequences
+- [ ] If the input was wrapped in Markdown, the wrapper was preserved in the output

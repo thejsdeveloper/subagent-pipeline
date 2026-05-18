@@ -72,3 +72,30 @@ Generate these four files. Keep each one short.
 - Do not write production code during onboarding. Docs only.
 - Keep every doc short. The user will refine — that's the point.
 - If the codebase has any existing diagrams worth keeping, copy them into `docs/diagrams/` and link from `ARCHITECTURE.md`. Don't generate new ones in onboarding — `/architect` handles that later.
+
+## Common Rationalizations
+
+| Rationalization | Reality |
+| --- | --- |
+| "The codebase is small; AGENTS.md doesn't need to mention the stack" | Every codebase grows. The planner reads AGENTS.md next; missing stack info means the planner re-derives it from scratch every time. |
+| "I'll fill in CONVENTIONS.md later when we have conventions" | Onboarding is the moment you have full attention. Empty CONVENTIONS = drift starts immediately. |
+| "I'll just ask the user everything" | Discovery via reading beats interrogation. Read the manifest files first; ask only what the code can't answer. |
+| "Aspirational architecture rules describe where we're going" | The reviewer enforces what's written today. Aspirational rules turn into false positives. |
+| "Adding a calibration question feels useful" | The fixed five exist on purpose. More questions = onboarding fatigue. |
+
+## Red Flags
+
+- Writing `CONVENTIONS.md` without reading `package.json` / `pyproject.toml` / `go.mod` first
+- Asking the user which test framework they use when it's visible in the manifest
+- `ARCHITECTURE.md` contains layering rules no existing code follows
+- Generated files contain placeholder TODOs instead of real, project-specific content
+- onboarding ran `git add` / `git commit` / `git push`
+
+## Verification
+
+- [ ] `AGENTS.md`, `docs/CONVENTIONS.md`, `docs/ARCHITECTURE.md`, `docs/adr/0001-record-architecture-decisions.md` all exist
+- [ ] `AGENTS.md` Stack section names language, framework, tests, and deploy target — no TODOs
+- [ ] `CONVENTIONS.md` cites the actual lint and test commands, not placeholders
+- [ ] `ARCHITECTURE.md` folder map matches the real top-level folders of the repo
+- [ ] Every layering rule in `ARCHITECTURE.md` is grounded in observed code
+- [ ] No git state-changing commands were run
