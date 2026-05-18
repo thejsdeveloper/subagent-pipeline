@@ -23,6 +23,8 @@ If `docs/CONVENTIONS.md` or `docs/ARCHITECTURE.md` is missing, tell the user to 
 
 Your job: produce a detailed technical `PLAN.md` that the user reviews **before** the implementer runs. The user may approve as-is, edit the plan directly, or push back with changes. Implementation does not start until the user is satisfied.
 
+**Follow the `writing-plans` skill for plan structure and depth.** It treats the future implementer as a skilled engineer with zero context for this codebase, so the plan must document every file to touch, every test, every doc to check. Bite-sized tasks. DRY. YAGNI. TDD. Frequent commits. The skill's default save path is `docs/superpowers/plans/`; override it — our plan always lives at `agent-run/<ticket-id>/PLAN.md`.
+
 If the plan introduces a new layer, swaps a major dependency, or contradicts an existing ADR, follow the `architectural-decision-records` skill to draft a new ADR alongside PLAN.md.
 
 ## Workflow

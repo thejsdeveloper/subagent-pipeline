@@ -11,7 +11,7 @@ You are the spec-builder agent. Your job is to produce a consolidated `SPEC.md` 
 **Why the split:** single-process pipeline orchestration is unreliable. The runtime often inlines what should be spawned, which silently breaks adversarial separation. Putting orchestration in the user's hands guarantees a fresh context per step, because each manual slash command in the chat is a clean subagent invocation.
 
 If the SPEC needs Gherkin-style acceptance scenarios, follow the `gherkin-authoring` skill.
-If the ticket arrives with no description or no acceptance criteria (or only vague ones), follow the `grill-me` skill before writing the SPEC.
+If the ticket arrives with no description or no acceptance criteria (or only vague ones), follow the `brainstorming` skill before writing the SPEC. Brainstorming is the primary tool here — it gates on user approval of the design before any downstream work runs, which is exactly what we want for an incomplete ticket. The lighter `grill-me` skill is also fine for quick clarifications inside an already-solid SPEC. Write the brainstorming output into `agent-run/<ticket-id>/SPEC.md`, not the default `docs/superpowers/` path the skill mentions.
 If the user has not yet onboarded the repo (no `docs/CONVENTIONS.md` or no `AGENTS.md`), suggest running `/onboarding` first — the spec lands without context otherwise.
 
 ## Two input modes
@@ -36,14 +36,14 @@ In local mode, skip this step.
 
 ### 1a. Check ticket completeness
 
-Look at what you actually have to work from. In **local mode** the input is a one-line Task — that is by definition "no description and no AC", so jump straight to grill-me. In **Jira mode** apply the conditions below.
+Look at what you actually have to work from. In **local mode** the input is a one-line Task — that is by definition "no description and no AC", so jump straight to the brainstorming skill. In **Jira mode** apply the conditions below.
 
-- If the description is empty (title only), **follow the `grill-me` skill**. Interview the user one question at a time to derive: the goal, who is affected, what "done" looks like, what is explicitly out of scope, any constraints. Build the SPEC from that conversation. Do not invent context the ticket does not have.
-- If the description exists but there are no acceptance criteria, **follow the `grill-me` skill** to derive AC together with the user before writing the SPEC.
-- If the acceptance criteria are vague ("make it work", "improve UX", "fast"), **follow the `grill-me` skill** to convert each vague criterion into a concrete, observable outcome.
+- If the description is empty (title only), **follow the `brainstorming` skill**. Run its full process: understand current project context, ask clarifying questions one at a time, present the design, get explicit user approval before declaring the SPEC ready. Build the SPEC from that conversation. Do not invent context the ticket does not have.
+- If the description exists but there are no acceptance criteria, **follow the `brainstorming` skill** to derive AC together with the user, then get approval on the resulting design.
+- If the acceptance criteria are vague ("make it work", "improve UX", "fast"), use **`grill-me`** for narrow clarification of each vague criterion. (Full brainstorming is overkill when only AC needs sharpening.)
 - If the ticket is complete (description + concrete AC), skip this step.
 
-When this step runs, add `Chat conversation with user (<date>)` to the SPEC's Sources section alongside the Jira link (or as the primary source in local mode).
+When this step runs, add `Chat conversation with user (<date>)` to the SPEC's Sources section alongside the Jira link (or as the primary source in local mode). If the brainstorming skill produced a separate design document during its process, link it from Sources too.
 
 ### 2. Resolve linked Confluence pages
 
